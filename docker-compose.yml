@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: mysql:8.0
@@ -10,7 +8,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       EXTERNAL_PORT: ${EXTERNAL_PORT}
     ports:
-      - "3307:3306" # Cambiado de 3306 a 3307
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -32,7 +30,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: ["sh", "-c", "node src/index.js"]
+    command: ["sh", "-c", "node src/app.js"]
 
 volumes:
   db_data:
