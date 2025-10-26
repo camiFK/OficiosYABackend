@@ -7,11 +7,10 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       EXTERNAL_PORT: ${EXTERNAL_PORT}
     ports:
-      - "${EXTERNAL_PORT}:3306"
+      - "3307:3306" # Cambiado de 3306 a 3307
     volumes:
       - db_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -24,7 +23,6 @@ services:
   api:
     build:
       context: ./api
-      dockerfile: Dockerfile
     container_name: express-api
     restart: unless-stopped
     env_file:
