@@ -1,14 +1,13 @@
 services:
   db:
     image: mysql:8.0
-    container_name: mysql-db
+    container_name: oficiosya-db
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      EXTERNAL_PORT: ${EXTERNAL_PORT}
     ports:
-      - "3307:3306"
+      - "${EXTERNAL_PORT}:${DB_PORT}"
     volumes:
       - db_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -21,16 +20,22 @@ services:
   api:
     build:
       context: ./api
-    container_name: express-api
+      dockerfile: Dockerfile
+    container_name: oficiosya-api
     restart: unless-stopped
     env_file:
       - .env
+    working_dir: /app
     ports:
       - "3000:3000"
+    volumes:
+      - ./api:/app 
     depends_on:
       db:
         condition: service_healthy
-    command: ["sh", "-c", "node src/app.js"]
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    command: ["sh", "-c", "npm install --no-audit --no-fund && npm run dev"]
 
 volumes:
   db_data:
