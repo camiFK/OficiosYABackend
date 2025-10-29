@@ -4,10 +4,15 @@ WORKDIR /app
 
 COPY package*.json ./
 
+COPY . /app
+
+RUN npm install -g nodemon
+
 RUN npm install
 
 COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+ENTRYPOINT ["nodemon", "/app/server.js"]  
+CMD ["npm", "run", "dev"]
