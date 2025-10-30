@@ -52,10 +52,13 @@ Cliente.hasMany(Calificacion, { foreignKey: 'id_cliente', as: 'calificaciones' }
 // ========== PRESTADOR ==========
 Prestador.belongsTo(Usuario, { foreignKey: 'id_usuario', as: 'usuario' });
 Prestador.belongsTo(Ubicacion, { foreignKey: 'id_ubicacion', as: 'ubicacion' });
+Prestador.belongsToMany(Categoria, { through: PrestadorCategoria, foreignKey: 'id_prestador', as: 'categorias' });
 Prestador.hasMany(ImagenPrestador, { foreignKey: 'id_prestador', as: 'imagenes' });
-Prestador.hasMany(PrestadorCategoria, { foreignKey: 'id_prestador', as: 'categorias' });
 Prestador.hasMany(Presupuesto, { foreignKey: 'id_prestador', as: 'presupuestos' });
 Prestador.hasMany(Calificacion, { foreignKey: 'id_prestador', as: 'calificaciones' });
+
+// ========== CATEGORIA ==========
+Categoria.belongsToMany(Prestador, { through: PrestadorCategoria, foreignKey: 'id_categoria', as: 'prestadores' });
 
 // ========== SOLICITUD_SERVICIO ==========
 SolicitudServicio.belongsTo(Cliente, { foreignKey: 'id_cliente', as: 'cliente' });
