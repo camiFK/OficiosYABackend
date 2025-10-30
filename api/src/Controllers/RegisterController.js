@@ -58,9 +58,9 @@ module.exports = {
             }
 
             // Validar que el rol sea válido
-            if (rol !== 'Solicitante' && rol !== 'Prestador') {
+            if (rol !== 'Cliente' && rol !== 'Prestador') {
                 return res.status(400).json({ 
-                    error: 'El rol debe ser "Solicitante" o "Prestador".' 
+                    error: 'El rol debe ser "Cliente" o "Prestador".' 
                 });
             }
 
