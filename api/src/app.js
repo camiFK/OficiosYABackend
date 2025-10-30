@@ -28,7 +28,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use('/api/users', UserRoutes);
-app.use('/api/rols', RolRoutes);
+app.use('/api/roles', RolRoutes);
 app.use('/api/auth', AuthRoutes);
 app.use('/api/ubicaciones', UbicacionRoutes);
 

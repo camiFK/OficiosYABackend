@@ -62,13 +62,14 @@ async function seedUbicaciones() {
 
     for (const ubicacion of ubicaciones) {
         await Ubicacion.findOrCreate({
-            where: { 
+            where: {
                 localidad: ubicacion.localidad,
-                provincia: ubicacion.provincia 
+                provincia: ubicacion.provincia
             },
             defaults: ubicacion
         });
     }
+    console.log(`${ubicaciones.length} ubicaciones insertadas`);
 }
 
 module.exports = seedUbicaciones;

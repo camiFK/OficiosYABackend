@@ -28,8 +28,8 @@ async function seedUsuarios() {
         }
     });
 
-    // Solicitantes
-    const solicitantes = [
+    // clientes
+    const clientes = [
         {
             correo: 'juan.solicitante@example.com',
             nombre_completo: 'Juan Pérez',
@@ -57,14 +57,14 @@ async function seedUsuarios() {
         }
     ];
 
-    for (const solData of solicitantes) {
+    for (const solData of clientes) {
         const [usuario] = await Usuario.findOrCreate({
             where: { correo: solData.correo },
             defaults: {
                 correo: solData.correo,
                 contrasena: hashedPassword,
                 estado: 'activo',
-                id_rol: roles.solicitante.id_rol
+                id_rol: roles.cliente.id_rol
             }
         });
 
@@ -221,7 +221,9 @@ async function seedUsuarios() {
                 }
             });
         }
+
+        console.log(`${prestadores.length} prestadores insertados`);
+        console.log(`${clientes.length} clientes insertados`);
     }
 }
-
 module.exports = seedUsuarios;

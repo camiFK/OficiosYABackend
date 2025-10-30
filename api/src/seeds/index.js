@@ -1,8 +1,9 @@
-const { sequelize } = require('../Models/Index');
+const sequelize = require('../config/database');
 const seedRoles = require('./rolSeed');
 const seedUbicaciones = require('./ubicacionSeed');
 const seedUsuarios = require('./usuarioSeed');
 const seedCategorias = require('./categoriaSeed');
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 async function runSeeds() {
     try {

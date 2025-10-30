@@ -13,6 +13,8 @@ async function seedRoles() {
             defaults: rol
         });
     }
+    console.log(`${roles.length} roles insertados`);
 }
+
 
 module.exports = seedRoles;

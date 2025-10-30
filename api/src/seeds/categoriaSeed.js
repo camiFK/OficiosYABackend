@@ -83,7 +83,7 @@ async function seedCategorias() {
         });
     }
 
-    console.log(`   ✓ ${categorias.length} categorías insertadas`);
+    console.log(`${categorias.length} categorías insertadas`);
 }
 
 module.exports = seedCategorias;
