@@ -1,6 +1,6 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const app = require('./app');
-const { sequelize } = require('./Models/Index');
+const sequelize  = require('./config/database');
 
 const PORT = process.env.PORT || 3000;
 
@@ -29,7 +29,7 @@ async function startServer() {
         });
 
     } catch (error) {
-        console.error('ERROR AL INICIAR EL SERVIDOR');  
+        console.error('ERROR AL INICIAR EL SERVIDOR', error);  
    }
 }
 
