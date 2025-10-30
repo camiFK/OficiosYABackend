@@ -8,10 +8,10 @@
     "dev": "nodemon --watch src --legacy-watch src/server.js",
     "seed": "node src/seeds/index.js",
     "seed:fresh": "NODE_ENV=development node src/seeds/index.js"
-    
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
