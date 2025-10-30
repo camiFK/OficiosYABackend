@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const UserRoutes = require('./Routes/UsuarioRoutes.js');
 const RolRoutes = require('./Routes/RolRoutes.js');
+const CategoriaRoutes = require('./Routes/CategoriaRoutes.js');
 const AuthRoutes = require('./Routes/AuthRoutes.js');
 const UbicacionRoutes = require('./Routes/UbicacionRoutes.js');
 
@@ -29,6 +30,7 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use('/api/users', UserRoutes);
 app.use('/api/roles', RolRoutes);
+app.use('/api/categorias', CategoriaRoutes);
 app.use('/api/auth', AuthRoutes);
 app.use('/api/ubicaciones', UbicacionRoutes);
 
