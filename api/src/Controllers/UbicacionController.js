@@ -18,6 +18,19 @@ module.exports = {
         }
     },
 
+    async getUbicacionById(req, res) {
+        try {
+            const ubicacion = await Ubicacion.findByPk(req.params.id);
+            if (!ubicacion) {
+                return res.status(404).json({ error: 'Ubicación no encontrada.' });
+            }
+            res.status(200).json(ubicacion);
+        } catch (error) {   
+            console.error('Error al obtener la ubicación por ID:', error);
+            res.status(500).json({ error: 'Error al obtener la ubicación.' });
+        }
+    },
+
     // GET /ubicaciones/provincias: Obtiene todas las provincias únicas
     async getProvincias(req, res) {
         try {
@@ -37,11 +50,25 @@ module.exports = {
         }
     },
 
+    async getLocalidadByName(req, res) {
+        try {
+            const localidad = decodeURIComponent(req.params.localidad);
+            const ubicacion = await Ubicacion.findOne({
+                where: { localidad }
+            })
+            res.status(200).json({ubicacion})           
+        } catch (error) {
+            console.error('Error al obtener localidad:', error);
+            res.status(500).json({ 
+                error: 'Error al obtener la localidad.' 
+            });
+        }
+    },
+
     // GET /ubicaciones/localidades/:provincia: Obtiene todas las localidades de una provincia
     async getLocalidadesByProvincia(req, res) {
         try {
-            const { provincia } = req.params;
-
+            const provincia = decodeURIComponent(req.params.provincia);
             const ubicaciones = await Ubicacion.findAll({
                 where: { provincia },
                 attributes: ['id_ubicacion', 'localidad'],
