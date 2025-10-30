@@ -11,7 +11,7 @@ class AccionAdministrador extends Model {
             id_usuario_afectado: DataTypes.INTEGER,
         }, {
             sequelize,
-            tableName: 'acciones_administrador',
+            tableName: 'accion_administrador',
             timestamps: false
         });
     }
