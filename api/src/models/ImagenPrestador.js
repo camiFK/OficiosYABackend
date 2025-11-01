@@ -7,7 +7,7 @@ class ImagenPrestador extends Model {
             id_prestador: DataTypes.INTEGER,
             ruta_imagen: DataTypes.STRING,
             descripcion: DataTypes.STRING,
-            fecha_subida: DataTypes.DATE,
+            fecha_subida: {type: DataTypes.DATE, defaultValue: DataTypes.NOW},
         }, {
             sequelize,
             tableName: 'imagen_prestador',
