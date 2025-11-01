@@ -63,7 +63,6 @@ module.exports = {
         return await bcrypt.compare(plainPassword, hashedPassword);
     },
 
-    // Hashea una contraseña
     async hashPassword(password) {
         return await bcrypt.hash(password, bcryptRounds);
     },
@@ -89,8 +88,7 @@ module.exports = {
             id_rol: rolRecord.id_rol
         });
 
-        // Crear registro específico según el rol
-        if (rol === 'Solicitante') {
+        if (rol === 'Cliente') {
             await Cliente.create({
                 id_usuario: nuevoUsuario.id_usuario,
                 nombre_completo,
@@ -131,7 +129,7 @@ module.exports = {
 
         let redirectUrl = '/';
 
-        if (usuario.rol.nombre === 'Solicitante') {
+        if (usuario.rol.nombre === 'Cliente') {
             const cliente = await Cliente.findOne({
                 where: { id_usuario: usuario.id_usuario },
                 include: [{
