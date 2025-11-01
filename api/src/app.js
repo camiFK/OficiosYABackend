@@ -6,6 +6,8 @@ const RolRoutes = require('./Routes/RolRoutes.js');
 const CategoriaRoutes = require('./Routes/CategoriaRoutes.js');
 const AuthRoutes = require('./Routes/AuthRoutes.js');
 const UbicacionRoutes = require('./Routes/UbicacionRoutes.js');
+const PrestadorRoutes = require('./Routes/PrestadorRoutes.js');
+const ClienteRoutes = require('./Routes/ClienteRoutes.js'); 
 
 const app = express();
 
@@ -33,6 +35,8 @@ app.use('/api/roles', RolRoutes);
 app.use('/api/categorias', CategoriaRoutes);
 app.use('/api/auth', AuthRoutes);
 app.use('/api/ubicaciones', UbicacionRoutes);
+app.use('/api/prestadores', PrestadorRoutes);
+app.use('/api/clientes', ClienteRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({ 
