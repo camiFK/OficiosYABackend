@@ -8,7 +8,7 @@ class EmailService {
             this.transporter = nodemailer.createTransport(emailConfig.smtp);
         } else {
             this.transporter = null;
-            console.warn('⚠️  SMTP no configurado. Los emails se mostrarán en consola.');
+            console.warn('SMTP no configurado. Los emails se mostrarán en consola.');
         }
     }
 

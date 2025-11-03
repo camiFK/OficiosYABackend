@@ -4,13 +4,13 @@ class Prestador extends Model {
     static init(sequelize) {
         super.init({
             id_prestador: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-            descripcion: DataTypes.TEXT,
-            experiencia: DataTypes.TEXT,
-            fecha_alta: DataTypes.DATE,
-            nombre_completo: DataTypes.STRING,
-            telefono: DataTypes.STRING,
-            id_ubicacion: DataTypes.INTEGER,
-            id_usuario: DataTypes.INTEGER,
+            descripcion: {type: DataTypes.TEXT,},
+            experiencia: {type: DataTypes.TEXT, },
+            fecha_alta: {type: DataTypes.DATE, defaultValue: DataTypes.NOW},
+            nombre_completo: {type: DataTypes.STRING, },
+            telefono: {type: DataTypes.STRING},
+            id_ubicacion: {type: DataTypes.INTEGER},
+            id_usuario: {type: DataTypes.INTEGER, allowNull: false},
         }, {
             sequelize,
             tableName: 'prestador',

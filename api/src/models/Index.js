@@ -14,6 +14,7 @@ const ImagenPrestador = require('./ImagenPrestador');
 const ImagenSolicitud = require('./ImagenSolicitud');
 const PrestadorCategoria = require('./PrestadorCategoria');
 const AccionAdministrador = require('./AccionAdministrador');
+const SolicitudPrestador = require('./SolicitudPrestador');
 
 // Initialize all models
 Usuario.init(sequelize);
@@ -31,6 +32,7 @@ ImagenPrestador.init(sequelize);
 ImagenSolicitud.init(sequelize);
 PrestadorCategoria.init(sequelize);
 AccionAdministrador.init(sequelize);
+SolicitudPrestador.init(sequelize);
 
 // Define associations
 // ========== USUARIO ==========
@@ -52,32 +54,41 @@ Cliente.hasMany(Calificacion, { foreignKey: 'id_cliente', as: 'calificaciones' }
 // ========== PRESTADOR ==========
 Prestador.belongsTo(Usuario, { foreignKey: 'id_usuario', as: 'usuario' });
 Prestador.belongsTo(Ubicacion, { foreignKey: 'id_ubicacion', as: 'ubicacion' });
+Prestador.belongsToMany(Categoria, { through: PrestadorCategoria, foreignKey: 'id_prestador', as: 'categorias' });
 Prestador.hasMany(ImagenPrestador, { foreignKey: 'id_prestador', as: 'imagenes' });
-Prestador.hasMany(PrestadorCategoria, { foreignKey: 'id_prestador', as: 'categorias' });
 Prestador.hasMany(Presupuesto, { foreignKey: 'id_prestador', as: 'presupuestos' });
 Prestador.hasMany(Calificacion, { foreignKey: 'id_prestador', as: 'calificaciones' });
+Prestador.hasMany(SolicitudPrestador, { foreignKey: 'id_prestador', as: 'solicitudes_prestador' });
+
+// ========== CATEGORIA ==========
+Categoria.belongsToMany(Prestador, { through: PrestadorCategoria, foreignKey: 'id_categoria', as: 'prestadores' });
 
 // ========== SOLICITUD_SERVICIO ==========
 SolicitudServicio.belongsTo(Cliente, { foreignKey: 'id_cliente', as: 'cliente' });
 SolicitudServicio.belongsTo(Categoria, { foreignKey: 'id_categoria', as: 'categoria' });
 SolicitudServicio.belongsTo(Ubicacion, { foreignKey: 'id_ubicacion', as: 'ubicacion' });
-SolicitudServicio.hasMany(ImagenSolicitud, { foreignKey: 'id_solicitud', as: 'imagenes' });
-SolicitudServicio.hasMany(Notificacion, { foreignKey: 'id_solicitud', as: 'notificaciones' });
-SolicitudServicio.hasMany(Presupuesto, { foreignKey: 'id_solicitud', as: 'presupuestos' });
-SolicitudServicio.hasOne(Calificacion, { foreignKey: 'id_solicitud', as: 'calificacion' });
+SolicitudServicio.hasMany(ImagenSolicitud, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'imagenes' });
+SolicitudServicio.hasMany(Notificacion, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'notificaciones' });
+SolicitudServicio.hasMany(Presupuesto, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'presupuestos' });
+SolicitudServicio.hasOne(Calificacion, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'calificacion' });
+SolicitudServicio.hasMany(SolicitudPrestador, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'solicitudes_prestador' });
+
+// ========== SOLICITUD_PRESTADOR ==========
+SolicitudPrestador.belongsTo(Prestador, { foreignKey: 'id_prestador', as: 'prestador' });
+SolicitudPrestador.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'solicitud' });
 
 // ========== CALIFICACION ==========
 Calificacion.belongsTo(Cliente, { foreignKey: 'id_cliente', as: 'cliente' });
 Calificacion.belongsTo(Prestador, { foreignKey: 'id_prestador', as: 'prestador' });
-Calificacion.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', as: 'solicitud' });
+Calificacion.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'solicitud' });
 
 // ========== PRESUPUESTO ==========
 Presupuesto.belongsTo(Prestador, { foreignKey: 'id_prestador', as: 'prestador' });
-Presupuesto.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', as: 'solicitud' });
+Presupuesto.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'solicitud' });
 
 // ========== NOTIFICACION ==========
 Notificacion.belongsTo(Usuario, { foreignKey: 'id_usuario_destino', as: 'usuario_destino' });
-Notificacion.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', as: 'solicitud' });
+Notificacion.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'solicitud' });
 
 // ========== REPORTE ==========
 Reporte.belongsTo(Usuario, { foreignKey: 'id_usuario_reportante', as: 'usuario_reportante' });
@@ -85,7 +96,7 @@ Reporte.belongsTo(Usuario, { foreignKey: 'id_usuario_reportado', as: 'usuario_re
 
 // ========== IMAGENES ==========
 ImagenPrestador.belongsTo(Prestador, { foreignKey: 'id_prestador', as: 'prestador' });
-ImagenSolicitud.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', as: 'solicitud' });
+ImagenSolicitud.belongsTo(SolicitudServicio, { foreignKey: 'id_solicitud', targetKey: 'id_solicitud_servicio', as: 'solicitud' });
 
 // ========== PRESTADOR_CATEGORIA ==========
 PrestadorCategoria.belongsTo(Prestador, { foreignKey: 'id_prestador', as: 'prestador' });
@@ -103,6 +114,7 @@ module.exports = {
     Cliente,
     Prestador,
     SolicitudServicio,
+    SolicitudPrestador,
     Presupuesto,
     Calificacion,
     Notificacion,

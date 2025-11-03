@@ -3,7 +3,7 @@ const { Rol } = require('../Models/Index');
 async function seedRoles() {
     const roles = [
         { nombre: 'Administrador' },
-        { nombre: 'Solicitante' },
+        { nombre: 'Cliente' },
         { nombre: 'Prestador' }
     ];
 
@@ -13,8 +13,8 @@ async function seedRoles() {
             defaults: rol
         });
     }
-
-    console.log('   ✓ Roles: Administrador, Solicitante, Prestador');
+    console.log(`${roles.length} roles insertados`);
 }
+
 
 module.exports = seedRoles;
