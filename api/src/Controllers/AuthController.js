@@ -1,4 +1,5 @@
 const UserService = require('../Services/UserService');
+const ResponseService = require('../Services/ResponseService');
 
 module.exports = {
     // GET /auth/me: Obtiene los datos del usuario autenticado
@@ -7,34 +8,43 @@ module.exports = {
             const userData = await UserService.findByIdWithDetails(req.userId);
 
             if (!userData) {
-                return res.status(404).json({ 
-                    error: 'Usuario no encontrado.' 
-                });
+                return ResponseService.notFound(res, 'Usuario');
             }
 
-            res.status(200).json(userData);
+            return ResponseService.success(res, userData, 'Datos del usuario obtenidos exitosamente');
         } catch (error) {
             console.error('Error en getMe:', error);
-            res.status(500).json({ 
-                error: 'Error al obtener datos del usuario.' 
-            });
+            return ResponseService.error(res, 'Error al obtener datos del usuario.');
+        }
+    },
+
+    // GET /auth/verify: Verifica si el token es válido
+    async verifyToken(req, res) {
+        try {
+            // Si llega aca, el token ya fue validado por el middleware
+            const userData = await UserService.findByIdWithDetails(req.userId);
+
+            if (!userData) {
+                return ResponseService.notFound(res, 'Usuario');
+            }
+
+            return ResponseService.success(res, { 
+                valid: true,
+                user: userData
+            }, 'Token válido');
+        } catch (error) {
+            console.error('Error en verify token:', error);
+            return ResponseService.error(res, 'Error al verificar token.');
         }
     },
 
     // POST /auth/logout: Cierra la sesión del usuario
     async logout(req, res) {
         try {
-            // Registrar el evento de cierre de sesión
-            console.log(`[LOGOUT] Usuario ${req.userId}`);
-            
-            res.status(200).json({ 
-                message: 'Sesión cerrada correctamente.' 
-            });
+            return ResponseService.logoutSuccess(res);
         } catch (error) {
             console.error('Error en logout:', error);
-            res.status(500).json({ 
-                error: 'Error al cerrar sesión.' 
-            });
+            return ResponseService.error(res, 'Error al cerrar sesión.');
         }
     }
 };
