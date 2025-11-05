@@ -428,6 +428,24 @@ module.exports = {
                 return ResponseService.notFound(res, 'Prestador');
             }
 
+            // Validacion de permisos
+            const { id_usuario, id_rol } = req.user;
+
+            // Verificar que sea el prestador o el admin
+            if (id_rol !== 1) {
+                const isPrestadorOwner = await Prestador.findOne({
+                    where: {id_prestador: id, id_usuario: id_usuario}
+                });
+
+                if (!isPrestadorOwner) {
+                    return ResponseService.error(
+                        res,
+                        'No tienes permisos para ver estas solicitudes',
+                        HTTP_STATUS.FORBIDDEN
+                    );
+                }
+            }
+
             const pageNum = Math.max(1, parseInt(page));
             const limitNum = Math.min(PAGINATION.MAX_LIMIT, Math.max(1, parseInt(limit)));
             const offset = (pageNum - 1) * limitNum;
