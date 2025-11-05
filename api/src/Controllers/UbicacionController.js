@@ -1,33 +1,59 @@
 const { Ubicacion } = require('../Models/Index');
+const ResponseService = require('../Services/ResponseService');
+const validators = require('../Utils/validators');
+const { HTTP_STATUS, SUCCESS_MESSAGES, ERROR_MESSAGES, PAGINATION } = require('../Utils/constants');
 
 module.exports = {
-    // GET /ubicaciones: Obtiene todas las ubicaciones disponibles
+    // GET /ubicaciones: Obtiene todas las ubicaciones disponibles con paginación
     async getAllUbicaciones(req, res) {
         try {
-            const ubicaciones = await Ubicacion.findAll({
-                attributes: ['id_ubicacion', 'localidad', 'provincia'],
-                order: [['provincia', 'ASC'], ['localidad', 'ASC']]
+            const { page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT, provincia } = req.query;
+            const pageNum = Math.max(1, parseInt(page));
+            const limitNum = Math.min(PAGINATION.MAX_LIMIT, Math.max(1, parseInt(limit)));
+            const offset = (pageNum - 1) * limitNum;
+
+            const whereClause = provincia ? { provincia } : {};
+
+            const result = await Ubicacion.findAndCountAll({
+                where: whereClause,
+                attributes: ['id_ubicacion', 'localidad', 'provincia', 'direccion'],
+                order: [['provincia', 'ASC'], ['localidad', 'ASC']],
+                limit: limitNum,
+                offset
             });
 
-            res.status(200).json(ubicaciones);
+            return ResponseService.paginated(res, result.rows, {
+                page: pageNum,
+                limit: limitNum,
+                total: result.count
+            }, SUCCESS_MESSAGES.DATA_RETRIEVED);
+
         } catch (error) {
             console.error('Error al obtener ubicaciones:', error);
-            res.status(500).json({ 
-                error: 'Error al obtener las ubicaciones.' 
-            });
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     },
 
+    // GET /ubicaciones/:id: Obtiene una ubicación por ID
     async getUbicacionById(req, res) {
         try {
-            const ubicacion = await Ubicacion.findByPk(req.params.id);
-            if (!ubicacion) {
-                return res.status(404).json({ error: 'Ubicación no encontrada.' });
+            const { id } = req.params;
+
+            if (!validators.isValidPositiveInteger(parseInt(id))) {
+                return ResponseService.validationError(res, [{ field: 'id', message: 'ID debe ser un número entero positivo' }]);
             }
-            res.status(200).json(ubicacion);
+
+            const ubicacion = await Ubicacion.findByPk(id);
+            
+            if (!ubicacion) {
+                return ResponseService.notFound(res, 'Ubicación');
+            }
+
+            return ResponseService.success(res, ubicacion, SUCCESS_MESSAGES.DATA_RETRIEVED);
+
         } catch (error) {   
             console.error('Error al obtener la ubicación por ID:', error);
-            res.status(500).json({ error: 'Error al obtener la ubicación.' });
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     },
 
@@ -41,46 +67,60 @@ module.exports = {
             });
 
             const provincias = ubicaciones.map(u => u.provincia);
-            res.status(200).json(provincias);
+            
+            return ResponseService.success(res, provincias, SUCCESS_MESSAGES.DATA_RETRIEVED);
+
         } catch (error) {
             console.error('Error al obtener provincias:', error);
-            res.status(500).json({ 
-                error: 'Error al obtener las provincias.' 
-            });
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     },
 
+    // GET /ubicaciones/localidad/:localidad: Obtiene ubicación por nombre de localidad
     async getLocalidadByName(req, res) {
         try {
-            const localidad = decodeURIComponent(req.params.localidad);
+            const localidad = decodeURIComponent(req.params.localidad).trim();
+
+            if (!validators.isValidLength(localidad, 2, 100)) {
+                return ResponseService.validationError(res, [{ field: 'localidad', message: 'La localidad debe tener entre 2 y 100 caracteres' }]);
+            }
+
             const ubicacion = await Ubicacion.findOne({
                 where: { localidad }
-            })
-            res.status(200).json({ubicacion})           
+            });
+
+            if (!ubicacion) {
+                return ResponseService.notFound(res, 'Ubicación');
+            }
+
+            return ResponseService.success(res, ubicacion, SUCCESS_MESSAGES.DATA_RETRIEVED);
+            
         } catch (error) {
             console.error('Error al obtener localidad:', error);
-            res.status(500).json({ 
-                error: 'Error al obtener la localidad.' 
-            });
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     },
 
     // GET /ubicaciones/localidades/:provincia: Obtiene todas las localidades de una provincia
     async getLocalidadesByProvincia(req, res) {
         try {
-            const provincia = decodeURIComponent(req.params.provincia);
+            const provincia = decodeURIComponent(req.params.provincia).trim();
+
+            if (!validators.isValidLength(provincia, 2, 100)) {
+                return ResponseService.validationError(res, [{ field: 'provincia', message: 'La provincia debe tener entre 2 y 100 caracteres' }]);
+            }
+
             const ubicaciones = await Ubicacion.findAll({
                 where: { provincia },
                 attributes: ['id_ubicacion', 'localidad'],
                 order: [['localidad', 'ASC']]
             });
 
-            res.status(200).json(ubicaciones);
+            return ResponseService.success(res, ubicaciones, SUCCESS_MESSAGES.DATA_RETRIEVED);
+
         } catch (error) {
             console.error('Error al obtener localidades:', error);
-            res.status(500).json({ 
-                error: 'Error al obtener las localidades.' 
-            });
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     },
 
@@ -89,24 +129,136 @@ module.exports = {
         try {
             const { localidad, provincia, direccion } = req.body;
 
-            if (!localidad || !provincia) {
-                return res.status(400).json({ 
-                    error: 'Localidad y provincia son obligatorios.' 
-                });
+            // Validaciones
+            const validationErrors = [];
+
+            if (!localidad || !validators.isValidLength(localidad.trim(), 2, 100)) {
+                validationErrors.push({ field: 'localidad', message: 'La localidad es obligatoria y debe tener entre 2 y 100 caracteres' });
+            }
+
+            if (!provincia || !validators.isValidLength(provincia.trim(), 2, 100)) {
+                validationErrors.push({ field: 'provincia', message: 'La provincia es obligatoria y debe tener entre 2 y 100 caracteres' });
+            }
+
+            if (direccion && !validators.isValidLength(direccion.trim(), 5, 255)) {
+                validationErrors.push({ field: 'direccion', message: 'La dirección debe tener entre 5 y 255 caracteres' });
+            }
+
+            if (validationErrors.length > 0) {
+                return ResponseService.validationError(res, validationErrors);
+            }
+
+            // Verificar si ya existe la combinación localidad-provincia
+            const existingUbicacion = await Ubicacion.findOne({
+                where: { 
+                    localidad: localidad.trim(), 
+                    provincia: provincia.trim() 
+                }
+            });
+
+            if (existingUbicacion) {
+                return ResponseService.conflict(res, 'La ubicación ya existe');
             }
 
             const ubicacion = await Ubicacion.create({
-                localidad,
-                provincia,
-                direccion
+                localidad: validators.sanitizeString(localidad),
+                provincia: validators.sanitizeString(provincia),
+                direccion: direccion ? validators.sanitizeString(direccion) : null
             });
 
-            res.status(201).json(ubicacion);
+            return ResponseService.created(res, ubicacion, 'Ubicación creada exitosamente');
+
         } catch (error) {
             console.error('Error al crear ubicación:', error);
-            res.status(500).json({ 
-                error: 'Error al crear la ubicación.' 
-            });
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
+    },
+
+    // PUT /ubicaciones/:id: Actualiza una ubicación (solo admin)
+    async updateUbicacion(req, res) {
+        try {
+            const { id } = req.params;
+            const { localidad, provincia, direccion } = req.body;
+
+            if (!validators.isValidPositiveInteger(parseInt(id))) {
+                return ResponseService.validationError(res, [{ field: 'id', message: 'ID debe ser un número entero positivo' }]);
+            }
+
+            const ubicacion = await Ubicacion.findByPk(id);
+            
+            if (!ubicacion) {
+                return ResponseService.notFound(res, 'Ubicación');
+            }
+
+            // Validaciones
+            const validationErrors = [];
+
+            if (localidad && !validators.isValidLength(localidad.trim(), 2, 100)) {
+                validationErrors.push({ field: 'localidad', message: 'La localidad debe tener entre 2 y 100 caracteres' });
+            }
+
+            if (provincia && !validators.isValidLength(provincia.trim(), 2, 100)) {
+                validationErrors.push({ field: 'provincia', message: 'La provincia debe tener entre 2 y 100 caracteres' });
+            }
+
+            if (direccion && !validators.isValidLength(direccion.trim(), 5, 255)) {
+                validationErrors.push({ field: 'direccion', message: 'La dirección debe tener entre 5 y 255 caracteres' });
+            }
+
+            if (validationErrors.length > 0) {
+                return ResponseService.validationError(res, validationErrors);
+            }
+
+            const updateData = {};
+            if (localidad) updateData.localidad = validators.sanitizeString(localidad);
+            if (provincia) updateData.provincia = validators.sanitizeString(provincia);
+            if (direccion !== undefined) updateData.direccion = direccion ? validators.sanitizeString(direccion) : null;
+
+            await ubicacion.update(updateData);
+
+            return ResponseService.updated(res, ubicacion, 'Ubicación actualizada exitosamente');
+
+        } catch (error) {
+            console.error('Error al actualizar ubicación:', error);
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
+    },
+
+    // DELETE /ubicaciones/:id: Elimina una ubicación (solo admin)
+    async deleteUbicacion(req, res) {
+        try {
+            const { id } = req.params;
+
+            if (!validators.isValidPositiveInteger(parseInt(id))) {
+                return ResponseService.validationError(res, [{ field: 'id', message: 'ID debe ser un número entero positivo' }]);
+            }
+
+            const ubicacion = await Ubicacion.findByPk(id);
+            
+            if (!ubicacion) {
+                return ResponseService.notFound(res, 'Ubicación');
+            }
+
+            // Verificar si la ubicación está siendo utilizada
+            const { Cliente, Prestador, SolicitudServicio } = require('../Models/Index');
+            
+            const [clientesCount, prestadoresCount, solicitudesCount] = await Promise.all([
+                Cliente.count({ where: { id_ubicacion: id } }),
+                Prestador.count({ where: { id_ubicacion: id } }),
+                SolicitudServicio.count({ where: { id_ubicacion: id } })
+            ]);
+
+            if (clientesCount > 0 || prestadoresCount > 0 || solicitudesCount > 0) {
+                return ResponseService.error(res, 'No se puede eliminar la ubicación porque está siendo utilizada', HTTP_STATUS.CONFLICT);
+            }
+
+            await ubicacion.destroy();
+
+            return ResponseService.deleted(res, 'Ubicación eliminada exitosamente');
+
+        } catch (error) {
+            console.error('Error al eliminar ubicación:', error);
+            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
 };
