@@ -14,7 +14,7 @@ class EmailService {
 
     // Envía email de recuperación de contraseña
     async sendPasswordResetEmail(correo, token) {
-        const resetUrl = `${emailConfig.frontendUrl}/reset-password?token=${token}`;
+        const resetUrl = `${emailConfig.frontendUrl}/recuperar-contrasena?token=${token}`;
         
         const mailOptions = {
             from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
@@ -48,7 +48,7 @@ class EmailService {
                 console.log(`Email enviado: ${info.messageId}`);
                 return { success: true, messageId: info.messageId };
             } else {
-                //mostrar en consola
+                // Mostrar en consola
                 console.log('\n=== EMAIL (MODO DESARROLLO) ===');
                 console.log(`Para: ${mailOptions.to}`);
                 console.log(`Asunto: ${mailOptions.subject}`);
