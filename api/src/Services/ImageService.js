@@ -30,11 +30,8 @@ class ImageService {
       );
 
       if (response.data && response.data.data && response.data.data.url) {
-        return {
-          url: response.data.data.url,
-          deleteUrl: response.data.data.delete_url,
-          displayUrl: response.data.data.display_url
-        };
+        // El controller espera solo la URL como string
+        return response.data.data.url;
       } else {
         throw new Error('Respuesta inválida de ImgBB');
       }
@@ -118,4 +115,4 @@ class ImageService {
   }
 }
 
-module.exports = { ImageService };
+module.exports = ImageService;
