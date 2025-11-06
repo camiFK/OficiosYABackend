@@ -286,40 +286,6 @@ module.exports = {
     }
   },
 
-  // DELETE /usuarios/:id: Elimina un usuario (desactivación suave)
-  async deleteUser(req, res) {
-    try {
-      const { id } = req.params;
-
-      if (!validators.isValidPositiveInteger(parseInt(id))) {
-        return ResponseService.validationError(res, [{ 
-          field: 'id', 
-          message: 'ID debe ser un número entero positivo' 
-        }]);
-      }
-
-      const user = await Usuario.findByPk(id);
-      if (!user) {
-        return ResponseService.notFound(res, 'Usuario');
-      }
-
-      // Verificar si el usuario puede ser eliminado
-      const canDelete = await UserService.canUserBeDeleted(id);
-      if (!canDelete.canDelete) {
-        return ResponseService.error(res, canDelete.reason, HTTP_STATUS.CONFLICT);
-      }
-
-      // Desactivar usuario en lugar de eliminarlo físicamente
-      await user.update({ estado: USUARIO_ESTADOS.INACTIVO });
-
-      return ResponseService.success(res, null, 'Usuario desactivado exitosamente');
-
-    } catch (error) {
-      console.error('Error al eliminar usuario:', error);
-      return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
-    }
-  },
-
   // PUT /usuarios/:id/estado: Cambia el estado de un usuario
   async updateUserStatus(req, res) {
     try {
