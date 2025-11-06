@@ -76,10 +76,11 @@ module.exports = {
     // POST /clientes/:id_cliente/solicitudes: Crea una nueva solicitud para un cliente
     async createClienteSolicitud(req, res) {
         try {
-            const { id_cliente } = req.params;
+            // Tomar el id_cliente correctamente del parámetro :id de la URL
+            const id_cliente = parseInt(req.params.id, 10);
             const { id_categoria, id_ubicacion, titulo, descripcion } = req.body;
 
-            if (!validators.isValidPositiveInteger(parseInt(id_cliente))) {
+            if (!validators.isValidPositiveInteger(id_cliente)) {
                 return ResponseService.validationError(res, [{ 
                     field: 'id_cliente', 
                     message: 'ID del cliente debe ser un número entero positivo' 
@@ -325,8 +326,8 @@ module.exports = {
         }
     },
 
-    // DELETE /solicitudes/:id: Elimina una solicitud
-    async deleteSolicitud(req, res) {
+    // PUT /solicitudes/:id/cancel: Cancela una solicitud
+    async cancelSolicitud(req, res) {
         try {
             const { id } = req.params;
 
@@ -358,9 +359,10 @@ module.exports = {
                 );
             }
 
-            await solicitud.destroy();
+            // Cambiar estado a cancelada en lugar de eliminar físicamente
+            await solicitud.update({ estado: 'Cancelada' });
 
-            return ResponseService.deleted(res, 'Solicitud eliminada exitosamente');
+            return ResponseService.success(res, solicitud, 'Solicitud cancelada exitosamente');
 
         } catch (error) {
             console.error('Error al eliminar solicitud:', error);
