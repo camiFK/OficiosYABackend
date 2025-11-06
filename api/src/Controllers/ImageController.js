@@ -1,4 +1,4 @@
-const { ImageService } = require('../Services/ImageService');
+const ImageService = require('../Services/ImageService');
 const ResponseService = require('../Services/ResponseService');
 const { ImagenPrestador, ImagenSolicitud, Prestador, SolicitudServicio } = require('../Models/Index');
 
@@ -28,12 +28,12 @@ module.exports = {
             ImageService.validateImage(req.file);
 
             // Subir imagen a ImgBB
-            const imgbbResponse = await ImageService.uploadToImgBB(req.file);
+            const imgbbUrl = await ImageService.uploadToImgBB(req.file);
 
             // Guardar en la base de datos con URL de ImgBB
             const imagenPrestador = await ImagenPrestador.create({
                 id_prestador: parseInt(req.body.prestadorId),
-                ruta_imagen: imgbbResponse.url, // URL de ImgBB
+                ruta_imagen: imgbbUrl, // URL de ImgBB
                 descripcion: req.body.descripcion || null,
                 fecha_subida: new Date()
             });
@@ -82,12 +82,12 @@ module.exports = {
             ImageService.validateImage(req.file);
 
             // Subir imagen a ImgBB
-            const imgbbResponse = await ImageService.uploadToImgBB(req.file);
+            const imgbbUrl = await ImageService.uploadToImgBB(req.file);
 
             // Guardar en la base de datos con URL de ImgBB
             const imagenSolicitud = await ImagenSolicitud.create({
                 id_solicitud: parseInt(req.body.solicitudId),
-                ruta_imagen: imgbbResponse.url, // URL de ImgBB
+                ruta_imagen: imgbbUrl, // URL de ImgBB
                 descripcion: req.body.descripcion || null,
                 fecha_subida: new Date()
             });
@@ -238,7 +238,6 @@ module.exports = {
         try {
             const { imageId } = req.params;
             const { descripcion } = req.body;
-
             if (!imageId) {
                 return ResponseService.validationError(res, [{ 
                     field: 'imageId', 
@@ -246,9 +245,20 @@ module.exports = {
                 }]);
             }
 
-            // Buscar la imagen
-            const imagen = await ImagenPrestador.findByPk(parseInt(imageId));
+            // Buscar el id_prestador del usuario autenticado
+            const usuarioId = req.user?.id_usuario || req.userId;
+            const prestador = await Prestador.findOne({ where: { id_usuario: usuarioId } });
+            if (!prestador) {
+                return ResponseService.error(res, 'No se encontró el prestador asociado al usuario autenticado');
+            }
 
+            // Buscar la imagen y validar que pertenezca al prestador autenticado
+            const imagen = await ImagenPrestador.findOne({
+                where: {
+                    id_imagen_prestador: parseInt(imageId),
+                    id_prestador: prestador.id_prestador
+                }
+            });
             if (!imagen) {
                 return ResponseService.notFound(res, 'Imagen no encontrada');
             }
