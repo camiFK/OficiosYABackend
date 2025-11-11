@@ -1,7 +1,9 @@
-const { Cliente, SolicitudServicio, Usuario, Ubicacion, Categoria, Presupuesto } = require('../Models/Index');
+const axios = require('axios');
+const { Cliente, SolicitudServicio, Usuario, Ubicacion, Categoria, Presupuesto, Prestador, PrestadorCategoria } = require('../Models/Index');
 const ResponseService = require('../Services/ResponseService');
 const validators = require('../Utils/validators');
 const { HTTP_STATUS, SUCCESS_MESSAGES, ERROR_MESSAGES, PAGINATION, SOLICITUD_ESTADOS } = require('../Utils/constants');
+const { Op } = require('sequelize');
 
 module.exports = {
     // GET /clientes/:id/solicitudes: Obtiene solicitudes de un cliente
@@ -367,6 +369,194 @@ module.exports = {
         } catch (error) {
             console.error('Error al eliminar solicitud:', error);
             return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
+    },
+
+        // GET /solicitudes/:id/prestadores
+    async obtenerPrestadoresPorLocalidad(req, res) {
+        try {
+            const { id } = req.params; 
+   
+            // Validar id
+            if (!validators.isValidPositiveInteger(parseInt(id))) {
+                return ResponseService.validationError(res, [
+                    { field: 'id', message: 'ID de solicitud inválido' }
+                ]);
+            }
+
+            // Buscar la solicitud con su ubicación
+            const solicitud = await SolicitudServicio.findOne({
+                where: { id_solicitud_servicio: id },
+                include: [
+                    {
+                        model: Ubicacion,
+                        as: 'ubicacion',
+                        attributes: ['id_ubicacion', 'localidad', 'provincia', 'direccion']
+                    }
+                ]
+            });
+
+            if (!solicitud) {
+                return ResponseService.notFound(res, 'Solicitud');
+            }
+
+            const localidadSolicitud = solicitud.ubicacion.localidad;
+            const categoriaId = solicitud.id_categoria;
+
+            // Buscar prestadores de esa localidad y categoría
+            const prestadores = await Prestador.findAll({
+                include: [
+                    {
+                        model: Ubicacion,
+                        as: 'ubicacion',
+                        where: { localidad: localidadSolicitud },
+                        attributes: ['id_ubicacion', 'localidad', 'provincia', 'direccion']
+                    },
+                    {
+                        model: Categoria,
+                        as: 'categorias', 
+                        where: { id_categoria: categoriaId },
+                        attributes: ['id_categoria', 'nombre']
+                    }
+                ],
+                attributes: [
+                    'id_prestador',
+                    'nombre_completo',
+                    'telefono',
+                    'id_ubicacion',
+                    'id_usuario'
+                ]
+            });
+
+            return ResponseService.success(
+                res,
+                {
+                    ubicacion: {
+                        localidad: localidadSolicitud,
+                        provincia: solicitud.ubicacion.provincia
+                    },
+                    categoriaId,
+                    prestadores
+                },
+                prestadores.length > 0
+                    ? 'Prestadores encontrados en la localidad para la categoría solicitada'
+                    : 'No se encontraron prestadores en la localidad para la categoría solicitada'
+            );
+
+        } catch (error) {
+            console.error('Error al obtener prestadores por localidad:', error);
+            return ResponseService.error(
+                res,
+                ERROR_MESSAGES.INTERNAL_ERROR,
+                HTTP_STATUS.INTERNAL_SERVER_ERROR
+            );
+        }
+    },
+
+
+
+     // GET /solicitudes/:id/prestadores-cercanos
+    async obtenerPrestadoresPorLocalidadCercana(req, res) {
+        try {
+            const { id } = req.params;
+ 
+            if (!validators.isValidPositiveInteger(parseInt(id))) {
+                return ResponseService.validationError(res, [
+                    { field: 'id', message: 'ID de solicitud inválido' },
+                ]);
+            }
+
+            //Obtener la solicitud y su ubicación
+            const solicitud = await SolicitudServicio.findOne({
+                where: { id_solicitud_servicio: id },
+                include: [{ model: Ubicacion, as: 'ubicacion', attributes: ['localidad', 'provincia'] }]
+            });
+
+            if (!solicitud) return ResponseService.notFound(res, 'Solicitud');
+
+            const { localidad, provincia } = solicitud.ubicacion;
+            const categoriaId = solicitud.id_categoria;
+
+            //Obtener coordenadas de la localidad base desde GeoRef
+            const geoResponse = await axios.get(
+                `https://apis.datos.gob.ar/georef/api/localidades?nombre=${encodeURIComponent(localidad)}&provincia=${encodeURIComponent(provincia)}&max=1`
+            );
+
+            if (!geoResponse.data.localidades.length) {
+                return ResponseService.error(
+                    res,
+                    `No se encontraron coordenadas para ${localidad}`,
+                    404
+                );
+            }
+
+            const { lat, lon } = geoResponse.data.localidades[0].centroide;
+
+            //Obtener todas las localidades de la provincia desde GeoRef
+            const allLocResponse = await axios.get(
+                `https://apis.datos.gob.ar/georef/api/localidades?provincia=${encodeURIComponent(provincia)}&max=500`
+            );
+
+            const radioKm = 15; // radio de búsqueda
+            const radianesPorKm = 1 / 111;
+
+            const latMin = lat - radioKm * radianesPorKm;
+            const latMax = lat + radioKm * radianesPorKm;
+            const lonMin = lon - radioKm * radianesPorKm;
+            const lonMax = lon + radioKm * radianesPorKm;
+
+            //Filtrar localidades dentro del radio
+            const localidadesCercanasGeoRef = allLocResponse.data.localidades
+                .filter(l => l.centroide)
+                .filter(l => 
+                    l.centroide.lat >= latMin &&
+                    l.centroide.lat <= latMax &&
+                    l.centroide.lon >= lonMin &&
+                    l.centroide.lon <= lonMax
+                )
+                .map(l => l.nombre);
+
+            //Filtrar solo las localidades que estén en la DB
+            const ubicacionesDB = await Ubicacion.findAll({
+                where: { localidad: { [Op.in]: localidadesCercanasGeoRef } },
+                attributes: ['localidad']
+            });
+
+            const localidadesCercanas = ubicacionesDB.map(u => u.localidad);
+
+            //Asegurar incluir la localidad original
+            if (!localidadesCercanas.includes(localidad)) localidadesCercanas.push(localidad);
+
+            //Buscar prestadores en esas localidades y categoría
+            const prestadores = await Prestador.findAll({
+                include: [
+                    {
+                        model: Ubicacion,
+                        as: 'ubicacion',
+                        where: { localidad: { [Op.in]: localidadesCercanas } },
+                        attributes: ['localidad', 'provincia', 'direccion']
+                    },
+                    {
+                        model: Categoria,
+                        as: 'categorias',
+                        where: { id_categoria: categoriaId },
+                        attributes: ['id_categoria', 'nombre']
+                    }
+                ],
+                attributes: ['id_prestador', 'nombre_completo', 'telefono']
+            });
+
+            return ResponseService.success(
+                res,
+                { localidadBase: localidad, localidadesCercanas, prestadores },
+                prestadores.length > 0
+                    ? 'Prestadores encontrados en localidades cercanas'
+                    : 'No se encontraron prestadores'
+            );
+
+        } catch (error) {
+            console.error('Error al obtener prestadores cercanos:', error);
+            return ResponseService.error(res, error.message || 'Error desconocido', 500);
         }
     }
 };
