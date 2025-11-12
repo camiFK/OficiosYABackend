@@ -259,49 +259,6 @@ module.exports = {
         }
     },
 
-    // DELETE /prestadores/:id: Elimina un prestador
-    async deletePrestador(req, res) {
-        try {
-            const { id } = req.params;
-
-            if (!validators.isValidPositiveInteger(parseInt(id))) {
-                return ResponseService.validationError(res, [{ 
-                    field: 'id', 
-                    message: 'ID debe ser un número entero positivo' 
-                }]);
-            }
-
-            const prestador = await Prestador.findByPk(id);
-            if (!prestador) {
-                return ResponseService.notFound(res, 'Prestador');
-            }
-
-            // Verificar si tiene presupuestos activos
-            const presupuestosActivos = await Presupuesto.count({
-                where: { 
-                    id_prestador: id,
-                    estado: ['pendiente', 'aceptado']
-                }
-            });
-
-            if (presupuestosActivos > 0) {
-                return ResponseService.error(
-                    res, 
-                    'No se puede eliminar el prestador porque tiene presupuestos activos', 
-                    HTTP_STATUS.CONFLICT
-                );
-            }
-
-            await prestador.destroy();
-
-            return ResponseService.deleted(res, 'Prestador eliminado exitosamente');
-
-        } catch (error) {
-            console.error('Error al eliminar prestador:', error);
-            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
-        }
-    },
-
     // PUT /prestadores/:id/categorias: Actualiza las categorías de un prestador
     async updateCategorias(req, res) {
         try {
@@ -387,13 +344,15 @@ module.exports = {
                 return ResponseService.notFound(res, 'Prestador');
             }
 
-            // Validar y subir imagen a ImgBB
+            // Validar imagen antes de subir
+            ImageService.validateImage(req.file);
+            
+            // Subir imagen a ImgBB
             const imageUrl = await ImageService.uploadToImgBB(req.file);
 
             const newImage = await ImagenPrestador.create({
                 id_prestador: id,
                 ruta_imagen: imageUrl,
-                nombre_archivo: req.file.originalname,
                 descripcion: descripcion ? validators.sanitizeString(descripcion) : null,
                 fecha_subida: new Date()
             });
@@ -426,6 +385,24 @@ module.exports = {
             const prestador = await Prestador.findByPk(id);
             if (!prestador) {
                 return ResponseService.notFound(res, 'Prestador');
+            }
+
+            // Validacion de permisos
+            const { id_usuario, id_rol } = req.user;
+
+            // Verificar que sea el prestador o el admin
+            if (id_rol !== 1) {
+                const isPrestadorOwner = await Prestador.findOne({
+                    where: {id_prestador: id, id_usuario: id_usuario}
+                });
+
+                if (!isPrestadorOwner) {
+                    return ResponseService.error(
+                        res,
+                        'No tienes permisos para ver estas solicitudes',
+                        HTTP_STATUS.FORBIDDEN
+                    );
+                }
             }
 
             const pageNum = Math.max(1, parseInt(page));
@@ -554,14 +531,16 @@ module.exports = {
                 return ResponseService.notFound(res, 'Prestador');
             }
 
-            // Validar la imagen y subirla a ImgBB
+            // Validar imagen antes de subir
+            ImageService.validateImage(req.file);
+            
+            // Subir imagen a ImgBB
             const imageUrl = await ImageService.uploadToImgBB(req.file);
 
             // Crear registro en la base de datos
             const imagenPrestador = await ImagenPrestador.create({
                 id_prestador: prestadorId,
                 ruta_imagen: imageUrl,
-                nombre_archivo: req.file.originalname,
                 descripcion: req.body.descripcion || 'Imagen del prestador',
                 fecha_subida: new Date()
             });
@@ -569,8 +548,6 @@ module.exports = {
             return ResponseService.created(res, {
                 id: imagenPrestador.id_imagen_prestador,
                 url: imagenPrestador.ruta_imagen,
-                filename: imagenPrestador.nombre_archivo,
-                originalName: req.file.originalname,
                 description: imagenPrestador.descripcion,
                 uploadDate: imagenPrestador.fecha_subida
             }, 'Imagen del prestador subida exitosamente');
@@ -661,7 +638,6 @@ module.exports = {
             return ResponseService.updated(res, {
                 id: imagen.id_imagen_prestador,
                 url: imagen.ruta_imagen,
-                filename: imagen.nombre_archivo,
                 description: imagen.descripcion,
                 uploadDate: imagen.fecha_subida
             }, 'Imagen actualizada exitosamente');
@@ -702,8 +678,7 @@ module.exports = {
                 offset,
                 attributes: [
                     'id_imagen_prestador',
-                    'ruta_imagen', 
-                    'nombre_archivo',
+                    'ruta_imagen',
                     'descripcion',
                     'fecha_subida'
                 ]

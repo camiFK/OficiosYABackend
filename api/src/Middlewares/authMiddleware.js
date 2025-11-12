@@ -15,6 +15,13 @@ module.exports = {
 
         try {
             const decoded = jwt.verify(token, jwtSecret);
+            req.user = {
+                id_usuario: decoded.id_usuario,
+                id_rol: decoded.id_rol,
+                rol: decoded.rol,
+                correo: decoded.correo
+            };
+
             req.userId = decoded.id_usuario;
             req.userRol = decoded.rol;
             req.userEmail = decoded.correo;

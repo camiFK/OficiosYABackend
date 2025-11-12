@@ -172,6 +172,23 @@ class ValidationMiddleware {
         };
     }
 
+    // Valida que un parámetro de ruta sea un entero positivo
+    static validatePositiveInteger(paramName) {
+        return (req, res, next) => {
+            const value = req.params[paramName];
+            
+            if (!value || !validators.isValidPositiveInteger(parseInt(value))) {
+                return res.status(400).json({
+                    error: 'Parámetro inválido',
+                    field: paramName,
+                    message: `${paramName} debe ser un número entero positivo`
+                });
+            }
+            
+            next();
+        };
+    }
+
     // Middleware combinado para registro de usuario
     static validateUserRegistration() {
         return [
