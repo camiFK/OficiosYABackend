@@ -1,5 +1,7 @@
 const UserService = require('../Services/UserService');
 const EmailService = require('../Services/EmailService');
+const TokenService = require('../Services/TokenService');
+const ResponseService = require('../Services/ResponseService');
 const validators = require('../Utils/validators');
 const { Ubicacion } = require('../Models/Index');
 
@@ -13,14 +15,34 @@ module.exports = {
                 confirmar_contrasena,
                 nombre_completo,
                 id_ubicacion,
-                rol,
+                id_rol,
                 telefono
             } = req.body;
 
-            // Campos obligatorios
-            if (!correo || !contrasena || !confirmar_contrasena || !nombre_completo || !id_ubicacion || !rol) {
+            // Validación de campos obligatorios básicos
+            if (!correo || !contrasena || !confirmar_contrasena || !nombre_completo || !id_ubicacion || !id_rol) {
+                const missingFields = {};
+                if (!correo) missingFields.correo = 'Requerido';
+                if (!contrasena) missingFields.contrasena = 'Requerido';
+                if (!confirmar_contrasena) missingFields.confirmar_contrasena = 'Requerido';
+                if (!nombre_completo) missingFields.nombre_completo = 'Requerido';
+                if (!id_ubicacion) missingFields.id_ubicacion = 'Requerido';
+                if (!id_rol) missingFields.id_rol = 'Requerido';
+                
+                return ResponseService.validationError(res, missingFields, 'Complete todos los campos obligatorios');
+            }
+
+            // Validar que el id_rol sea válido
+            if (![2, 3].includes(parseInt(id_rol))) {
                 return res.status(400).json({ 
-                    error: 'Complete todos los campos obligatorios.' 
+                    error: 'El rol debe ser Cliente (2) o Prestador (3)' 
+                });
+            }
+
+            // Validación específica para prestadores
+            if (parseInt(id_rol) === 3 && !telefono) {
+                return res.status(400).json({ 
+                    error: 'Para prestadores es obligatorio proporcionar el teléfono' 
                 });
             }
 
@@ -57,12 +79,8 @@ module.exports = {
                 });
             }
 
-            // Validar que el rol sea válido
-            if (rol !== 'Cliente' && rol !== 'Prestador') {
-                return res.status(400).json({ 
-                    error: 'El rol debe ser "Cliente" o "Prestador".' 
-                });
-            }
+            // Obtener el nombre del rol para uso interno
+            const rol = parseInt(id_rol) === 2 ? 'Cliente' : 'Prestador';
 
             // Verificar que la ubicación exista
             const ubicacion = await Ubicacion.findByPk(id_ubicacion);
@@ -72,24 +90,36 @@ module.exports = {
                 });
             }
 
+            // Obtener campos adicionales para prestador
+            const { descripcion, experiencia, categorias } = req.body;
+
             const nuevoUsuario = await UserService.createUser({
                 correo,
                 contrasena,
                 nombre_completo,
                 id_ubicacion,
-                rol,
-                telefono
+                id_rol: parseInt(id_rol),
+                rol, // Nombre del rol para uso interno
+                telefono,
+                descripcion: parseInt(id_rol) === 3 ? descripcion : null,
+                experiencia: parseInt(id_rol) === 3 ? experiencia : null,
+                categorias: parseInt(id_rol) === 3 ? categorias : null
+            });
+
+            // Generar token JWT para auto-login
+            const token = TokenService.generateAuthToken({
+                id_usuario: nuevoUsuario.id_usuario,
+                correo: nuevoUsuario.correo,
+                id_rol: parseInt(id_rol),
+                rol: rol
             });
 
             // Enviar email de bienvenida
             EmailService.sendWelcomeEmail(correo, nombre_completo)
                 .catch(err => console.error('Error enviando email de bienvenida:', err));
 
-            // Registrar evento
-            console.log(`[REGISTRO] Usuario creado: ${nuevoUsuario.id_usuario} - ${correo} - Rol: ${rol}`);
-
             res.status(201).json({
-                message: 'Usuario registrado correctamente. Ahora puede iniciar sesión.',
+                message: `${rol} registrado correctamente. Ya puede usar su cuenta.`,
                 usuario: {
                     id_usuario: nuevoUsuario.id_usuario,
                     correo: nuevoUsuario.correo,
@@ -97,7 +127,8 @@ module.exports = {
                     rol: rol,
                     estado: 'activo'
                 },
-                redirect: '/api/auth/login'
+                token: token,
+                redirect: rol === 'Prestador' ? '/panel/prestador' : '/panel/solicitante'
             });
 
         } catch (error) {
