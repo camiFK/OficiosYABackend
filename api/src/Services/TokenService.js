@@ -9,7 +9,8 @@ module.exports = {
                 id_usuario: userData.id_usuario,
                 correo: userData.correo,
                 id_rol: userData.id_rol,
-                rol: userData.rol
+                rol: userData.rol,
+                nombre_completo: userData.nombre_completo || null
             },
             jwtSecret,
             { expiresIn: jwtExpiration }

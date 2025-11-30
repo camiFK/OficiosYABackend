@@ -54,16 +54,14 @@ module.exports = {
                 return ResponseService.unauthorized(res, 'Correo o contraseña incorrectos.');
             }
 
-            // Crear token JWT
-            const token = TokenService.generateAuthToken({
-                id_usuario: usuario.id_usuario,
-                correo: usuario.correo,
-                id_rol: usuario.id_rol,
-                rol: usuario.rol.nombre
-            });
-
             // Obtener datos del usuario según su rol
             const { userData, redirectUrl } = await UserService.getUserDataForLogin(usuario);
+
+            // Agregar id_rol al userData para el token
+            userData.id_rol = usuario.id_rol;
+
+            // Crear token JWT
+            const token = TokenService.generateAuthToken(userData);
 
             return ResponseService.loginSuccess(res, userData, token, redirectUrl);
 
