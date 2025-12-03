@@ -8,6 +8,11 @@ module.exports = {
   // POST /usuarios: Crea un nuevo usuario (solo admin)
   async createUser(req, res) {
     try {
+      // Verificar que sea administrador
+      if (req.userRol !== 'Administrador') {
+        return ResponseService.forbidden(res, 'Solo administradores pueden crear usuarios');
+      }
+
       const { correo, contrasena, id_rol, estado } = req.body;
 
       // Validaciones básicas
@@ -150,6 +155,11 @@ module.exports = {
         }]);
       }
 
+      // Verificar permisos: solo admin o el propio usuario
+      if (req.userRol !== 'Administrador' && parseInt(id) !== req.userId) {
+        return ResponseService.forbidden(res, 'No tienes permisos para acceder a este usuario');
+      }
+
       const user = await Usuario.findByPk(id, {
         include: [
           {
@@ -196,6 +206,11 @@ module.exports = {
   // PUT /usuarios/:id: Actualiza un usuario
   async updateUser(req, res) {
     try {
+      // Verificar que sea administrador
+      if (req.userRol !== 'Administrador') {
+        return ResponseService.forbidden(res, 'Solo administradores pueden actualizar usuarios');
+      }
+
       const { id } = req.params;
       const { correo, estado, id_rol } = req.body;
 
