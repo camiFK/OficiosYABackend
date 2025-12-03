@@ -15,6 +15,7 @@ router.post('/',
 
 // GET /api/calificaciones/prestador/:id: Devuelve todas las calificaciones de un prestador
 router.get('/prestador/:id',
+    verifyToken,
     ValidationMiddleware.validatePositiveInteger('id'),
     ErrorHandler.asyncHandler(CalificacionController.getCalificacionesByPrestador)
 );
