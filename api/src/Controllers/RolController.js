@@ -7,6 +7,11 @@ module.exports = {
     // POST /roles: Crea un nuevo rol (solo admin)
     async createRole(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden crear roles');
+            }
+
             const { nombre } = req.body;
 
             if (!nombre || !validators.isValidLength(nombre.trim(), 2, 50)) {
@@ -40,6 +45,11 @@ module.exports = {
     // GET /roles: Obtiene todos los roles
     async getAllRoles(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden ver roles');
+            }
+
             const roles = await Rol.findAll({
                 attributes: ['id_rol', 'nombre'],
                 order: [['nombre', 'ASC']]
@@ -56,6 +66,11 @@ module.exports = {
     // GET /roles/:id: Obtiene un rol por ID
     async getRoleById(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden ver roles');
+            }
+
             const { id } = req.params;
 
             if (!validators.isValidPositiveInteger(parseInt(id))) {
@@ -84,6 +99,11 @@ module.exports = {
     // PUT /roles/:id: Actualiza un rol (solo admin)
     async updateRole(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden actualizar roles');
+            }
+
             const { id } = req.params;
             const { nombre } = req.body;
 
@@ -145,6 +165,11 @@ module.exports = {
     // DELETE /roles/:id: Elimina un rol (solo admin)
     async deleteRole(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden eliminar roles');
+            }
+
             const { id } = req.params;
 
             if (!validators.isValidPositiveInteger(parseInt(id))) {
