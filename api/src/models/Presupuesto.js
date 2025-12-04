@@ -7,7 +7,7 @@ class Presupuesto extends Model {
             monto: DataTypes.DECIMAL(10, 2),
             mensaje: DataTypes.TEXT,
             estado: DataTypes.STRING,
-            fecha_envio: DataTypes.DATE,
+            fecha_envio:{ type: DataTypes.DATE, defaultValue: DataTypes.NOW },
             id_prestador: DataTypes.INTEGER,
             id_solicitud: DataTypes.INTEGER,
         }, {
