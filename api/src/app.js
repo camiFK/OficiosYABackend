@@ -14,6 +14,7 @@ const ClienteRoutes = require('./Routes/ClienteRoutes.js');
 const ImageRoutes = require('./Routes/ImageRoutes.js'); 
 const NotificacionRoutes = require('./Routes/NotificacionRoutes.js');
 const CalificacionRoutes = require('./Routes/CalificacionRoutes.js');
+const AdminRoutes = require('./Routes/AdminRoutes.js');
 
 // Crear aplicación Express
 const app = express();
@@ -48,6 +49,7 @@ app.use('/api/clientes', ClienteRoutes);
 app.use('/api/images', ImageRoutes);
 app.use('/api/notificaciones', NotificacionRoutes);
 app.use('/api/calificaciones', CalificacionRoutes);
+app.use('/api/admin', AdminRoutes);
 
 const ResponseService = require('./Services/ResponseService');
 
