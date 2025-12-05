@@ -34,18 +34,13 @@ router.post('/:id/imagenes',
     controller.saveImage
 );
 
-router.delete('/images/:id', 
-    authMiddleware.verifyToken,
-    controller.deletePrestadorImage
-);
+router.delete('/images/:id', authMiddleware.verifyToken, controller.deletePrestadorImage);
 
-router.put('/images/:id', 
-    authMiddleware.verifyToken,
-    controller.updatePrestadorImage
-);
+router.put('/images/:id', authMiddleware.verifyToken, controller.updatePrestadorImage);
 
-router.get('/:id/images', 
-    controller.getPrestadorImages
-);
+router.get('/:id/images',  controller.getPrestadorImages);
+
+router.post('/presupuestos/enviados', authMiddleware.verifyToken, controller.getPresupuestosEnviados);
+router.post('/solicitudes/rechazar', authMiddleware.verifyToken, controller.rejectSolicitud);
 
 module.exports = router;

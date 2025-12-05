@@ -48,66 +48,6 @@ module.exports = {
             res.status(500).json({error: 'Error al enviar el presupuesto'});
         }
     },
-    async rejectSolicitud(req, res) {
-        try {
-            const { id } = req.params;
-            const solicitudPrestador = await SolicitudPrestador.findByPk(id);
-            if (!solicitudPrestador) {
-                return res.status(404).json({ error: 'Solicitud del prestador no encontrada' });
-            }
-            solicitudPrestador.estado = 'Rechazado';
-            await solicitudPrestador.save();
-            res.status(200).json({ message: 'Solicitud del prestador rechazada correctamente' });
-        }
-        catch (error) {
-            res.status(500).json({ error: 'Error al rechazar la solicitud del prestador' });
-        }
-    },
-    async acceptSolicitud(req, res) {
-        try {
-            const { id } = req.params;
-            const solicitudPrestador = await SolicitudPrestador.findByPk(id);
-            if (!solicitudPrestador) {
-                return res.status(404).json({ error: 'Solicitud del prestador no encontrada' });
-            }
-            solicitudPrestador.estado = 'Aceptado';
-            await solicitudPrestador.save();
-            res.status(200).json({ message: 'Solicitud del prestador aceptada correctamente' });
-        }
-        catch (error) {
-            res.status(500).json({ error: 'Error al aceptar la solicitud del prestador' });
-        }
-    },
-    async acceptPresupuesto(req, res) {
-        try {
-            const { id } = req.params;
-            const presupuesto = await Presupuesto.findByPk(id);
-            if (!presupuesto) {
-                return res.status(404).json({ error: 'Presupuesto no encontrado' });
-            }
-            presupuesto.estado = 'Aceptado';
-            await presupuesto.save();
-            res.status(200).json({ message: 'Presupuesto aceptado correctamente' });
-        }
-        catch (error) {
-            res.status(500).json({ error: 'Error al aceptar el presupuesto' });
-        }
-    },
-    async rejectPresupuesto(req, res) {
-        try {
-            const { id } = req.params;
-            const presupuesto = await Presupuesto.findByPk(id);
-            if (!presupuesto) {
-                return res.status(404).json({ error: 'Presupuesto no encontrado' });
-            }
-            presupuesto.estado = 'Rechazado';
-            await presupuesto.save();
-            res.status(200).json({ message: 'Presupuesto rechazado correctamente' });
-        }
-        catch (error) {
-            res.status(500).json({ error: 'Error al rechazar el presupuesto' });
-        }
-    },
     async getAllPresupuestosByCliente(req, res) {
         try {
             const { id_usuario } = req.body;
@@ -123,18 +63,5 @@ module.exports = {
         } catch (error) {
             res.status(500).json({ error: 'Error al obtener los presupuestos del usuario' });
         }
-    },
-    async requestSolicitudServicio(req, res) {
-        try {
-            const { id_solicitud, id_prestador } = req.body;
-            const nuevaSolicitudPrestador = await SolicitudPrestador.create({
-                id_solicitud,
-                id_prestador,
-                estado: 'Pendiente'
-            });
-            res.status(201).json(nuevaSolicitudPrestador);
-        } catch (error) {
-            res.status(500).json({ error: 'Error al solicitar la solicitud de servicio' });
-        }    
     }
 };
