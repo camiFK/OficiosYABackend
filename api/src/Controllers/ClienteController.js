@@ -10,6 +10,12 @@ module.exports = {
     async getSolicitudesByClienteId(req, res) {
         try {
             const { id } = req.params;
+
+            // Verificar que el usuario sea el cliente o administrador
+            if (req.userRol !== 'Administrador' && req.userId != id) {
+                return ResponseService.forbidden(res, 'No tienes permisos para ver estas solicitudes');
+            }
+
             const { 
                 page = PAGINATION.DEFAULT_PAGE, 
                 limit = PAGINATION.DEFAULT_LIMIT,

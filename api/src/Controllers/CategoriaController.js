@@ -7,6 +7,11 @@ module.exports = {
     // POST /categorias: Crea una nueva categoría
     async createCategoria(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden crear categorías');
+            }
+
             const { nombre, descripcion } = req.body;
 
             // Validaciones
@@ -137,6 +142,11 @@ module.exports = {
     // PUT /categorias/:id: Actualiza una categoría
     async updateCategoria(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden actualizar categorías');
+            }
+
             const { id } = req.params;
             const { nombre, descripcion } = req.body;
 
@@ -204,6 +214,11 @@ module.exports = {
     // DELETE /categorias/:id: Elimina una categoría
     async deleteCategoria(req, res) {
         try {
+            // Verificar que sea administrador
+            if (req.userRol !== 'Administrador') {
+                return ResponseService.forbidden(res, 'Solo administradores pueden eliminar categorías');
+            }
+
             const { id } = req.params;
 
             if (!validators.isValidPositiveInteger(parseInt(id))) {

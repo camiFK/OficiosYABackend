@@ -43,6 +43,7 @@ router.post('/upload/solicitud',
 
 // Ruta para obtener imágenes de una solicitud
 router.get('/solicitud/:solicitudId', 
+    authMiddleware.verifyToken,
     ImageController.getSolicitudImages
 );
 
