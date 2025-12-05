@@ -56,4 +56,7 @@ router.post('/logout',
     ErrorHandler.asyncHandler(AuthController.logout)
 );
 
+// Ruta para setup inicial de admin
+router.post('/setup-admin', AuthController.setupAdmin);
+
 module.exports = router;
