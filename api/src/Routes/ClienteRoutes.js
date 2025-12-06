@@ -10,5 +10,7 @@ router.put('/solicitudes/:id', verifyToken, controller.updateSolicitud);
 router.put('/solicitudes/:id/cancel', verifyToken, controller.cancelSolicitud);
 router.get('/solicitudes/:id/prestadores', verifyToken, controller.obtenerPrestadoresPorLocalidad);
 router.get('/solicitudes/:id/prestadores-cercanos', verifyToken, controller.obtenerPrestadoresPorLocalidadCercana);
+router.put('/presupuesto/:id/aceptar', verifyToken, controller.acceptPresupuesto);
+router.put('/presupuesto/:id/rechazar', verifyToken, controller.rejectPresupuesto);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-const { Prestador, Categoria, Ubicacion, SolicitudPrestador, Usuario, ImagenPrestador, Presupuesto, PrestadorCategoria } = require('../Models/Index');
+const { Prestador, Categoria, Ubicacion, SolicitudPrestador, Usuario, ImagenPrestador, Presupuesto, PrestadorCategoria, Notificacion } = require('../Models/Index');
 const ImageService = require('../Services/ImageService');
 const ResponseService = require('../Services/ResponseService');
 const validators = require('../Utils/validators');
@@ -693,6 +693,41 @@ module.exports = {
         } catch (error) {
             console.error('Error getting prestador images:', error);
             return ResponseService.error(res, 'Error interno al obtener las imágenes', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
+    },
+    async getPresupuestosEnviados(req, res) {
+        try {
+            const presupuestos = await Presupuesto.findAll({ 
+                where: { id_prestador: req.body.id_prestador, estado: 'Enviado' } 
+            });
+            res.status(200).json(presupuestos);
+        } catch (error) {
+            res.status(500).json({error: 'Error al obtener los presupuestos enviados'});
+        }
+    },
+    async rejectSolicitud(req, res) {
+        try {
+            const { id, message } = req.body;
+            const solicitudPrestador = await SolicitudPrestador.findByPk(id);
+            if (!solicitudPrestador) {
+                return res.status(404).json({ error: 'Solicitud del prestador no encontrada' });
+            }
+            solicitudPrestador.estado = 'Rechazado';
+            await solicitudPrestador.save();
+
+            if (message) {
+                const notificacion = await Notificacion.create({
+                    id_solicitud: solicitudPrestador.id_solicitud,
+                    id_usuario: solicitudPrestador.id_cliente,
+                    titulo: 'Solicitud rechazada',
+                    mensaje: message,
+                    estado: 'Enviado',
+                });
+            }
+            res.status(200).json({ message: 'Solicitud del prestador rechazada correctamente' });
+        }
+        catch (error) {
+            res.status(500).json({ error: 'Error al rechazar la solicitud del prestador' });
         }
     }
 };

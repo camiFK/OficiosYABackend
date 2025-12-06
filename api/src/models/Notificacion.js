@@ -7,7 +7,7 @@ class Notificacion extends Model {
             id_usuario_destino: DataTypes.INTEGER,
             tipo: DataTypes.STRING,
             mensaje: DataTypes.STRING,
-            fecha_envio: DataTypes.DATE,
+            fecha_envio: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
             estado: DataTypes.STRING,
             id_solicitud: DataTypes.INTEGER,
         }, {

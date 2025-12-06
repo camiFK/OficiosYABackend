@@ -5,7 +5,6 @@ const { verifyToken, requireRole } = require('../Middlewares/authMiddleware');
 
 router.get('/', controllers.getAllCategorias);
 router.get('/:id', verifyToken, controllers.getCategoriaById);
-router.get('/:id/prestadores', verifyToken, controllers.getPrestadoresByCategoria);
 router.post('/create', verifyToken, requireRole('Administrador'), controllers.createCategoria);
 router.put('/update/:id', verifyToken, requireRole('Administrador'), controllers.updateCategoria);
 router.delete('/delete/:id', verifyToken, requireRole('Administrador'), controllers.deleteCategoria);

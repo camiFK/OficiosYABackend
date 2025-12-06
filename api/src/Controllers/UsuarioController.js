@@ -8,23 +8,61 @@ module.exports = {
   // POST /usuarios: Crea un nuevo usuario (solo admin)
   async createUser(req, res) {
     try {
+      // Verificar que sea administrador
       if (req.userRol !== 'Administrador') {
         return ResponseService.forbidden(res, 'Solo administradores pueden crear usuarios');
       }
 
       const { correo, contrasena, id_rol, estado } = req.body;
+
+      // Validaciones básicas
       const validationErrors = [];
 
-      if (!correo || !validators.isValidEmail(correo)) validationErrors.push({ field: 'correo', message: validators.getEmailErrorMessage() });
-      if (!contrasena || !validators.isValidPassword(contrasena)) validationErrors.push({ field: 'contrasena', message: validators.getPasswordErrorMessage() });
-      if (!id_rol || !validators.isValidPositiveInteger(parseInt(id_rol))) validationErrors.push({ field: 'id_rol', message: 'ID de rol debe ser positivo' });
-      if (estado && !validators.isValidUsuarioEstado(estado)) validationErrors.push({ field: 'estado', message: 'Estado inválido' });
+      if (!correo || !validators.isValidEmail(correo)) {
+        validationErrors.push({ 
+          field: 'correo', 
+          message: validators.getEmailErrorMessage() 
+        });
+      }
 
-      if (validationErrors.length > 0) return ResponseService.validationError(res, validationErrors);
+      if (!contrasena || !validators.isValidPassword(contrasena)) {
+        validationErrors.push({ 
+          field: 'contrasena', 
+          message: validators.getPasswordErrorMessage() 
+        });
+      }
 
+      if (!id_rol || !validators.isValidPositiveInteger(parseInt(id_rol))) {
+        validationErrors.push({ 
+          field: 'id_rol', 
+          message: 'ID de rol debe ser un número entero positivo' 
+        });
+      }
+
+      if (estado && !validators.isValidUsuarioEstado(estado)) {
+        validationErrors.push({ 
+          field: 'estado', 
+          message: 'Estado de usuario inválido' 
+        });
+      }
+
+      if (validationErrors.length > 0) {
+        return ResponseService.validationError(res, validationErrors);
+      }
+
+      // Verificar que el correo no exista
       const existingUser = await UserService.findByEmail(correo);
-      if (existingUser) return ResponseService.conflict(res, 'El correo ya está registrado');
+      if (existingUser) {
+        return ResponseService.conflict(res, 'El correo ya está registrado');
+      }
 
+      // Verificar que el rol exista
+      const rol = await Rol.findByPk(id_rol);
+      if (!rol) {
+        return ResponseService.notFound(res, 'Rol');
+      }
+
+      // Crear usuario usando el servicio
       const hashedPassword = await UserService.hashPassword(contrasena);
 
       const user = await Usuario.create({
@@ -34,20 +72,29 @@ module.exports = {
         estado: estado || USUARIO_ESTADOS.ACTIVO
       });
 
+      // Respuesta sin contraseña
       const userSafe = { ...user.toJSON() };
       delete userSafe.contrasena;
 
       return ResponseService.created(res, userSafe, 'Usuario creado exitosamente');
+
     } catch (error) {
-      console.error(error);
+      console.error('Error al crear usuario:', error);
       return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   },
 
-  // GET /usuarios
+  // GET /usuarios: Obtiene todos los usuarios con paginación y filtros
   async getAllUsers(req, res) {
     try {
-      const { page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT, rol, estado, busqueda } = req.query;
+      const { 
+        page = PAGINATION.DEFAULT_PAGE, 
+        limit = PAGINATION.DEFAULT_LIMIT,
+        rol,
+        estado,
+        busqueda 
+      } = req.query;
+
       const pageNum = Math.max(1, parseInt(page));
       const limitNum = Math.min(PAGINATION.MAX_LIMIT, Math.max(1, parseInt(limit)));
       const offset = (pageNum - 1) * limitNum;
@@ -85,9 +132,14 @@ module.exports = {
         offset
       });
 
-      return ResponseService.paginated(res, result.rows, { page: pageNum, limit: limitNum, total: result.count }, SUCCESS_MESSAGES.DATA_RETRIEVED);
+      return ResponseService.paginated(res, result.rows, {
+        page: pageNum,
+        limit: limitNum,
+        total: result.count
+      }, SUCCESS_MESSAGES.DATA_RETRIEVED);
+
     } catch (error) {
-      console.error(error);
+      console.error('Error al obtener usuarios:', error);
       return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   },

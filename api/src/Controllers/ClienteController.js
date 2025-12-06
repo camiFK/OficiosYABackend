@@ -564,5 +564,41 @@ module.exports = {
             console.error('Error al obtener prestadores cercanos:', error);
             return ResponseService.error(res, error.message || 'Error desconocido', 500);
         }
+    },
+
+    async acceptPresupuesto(req, res) {
+        try {
+            try {
+            const { id } = req.params;
+            const presupuesto = await Presupuesto.findByPk(id);
+            if (!presupuesto) {
+                return res.status(404).json({ error: 'Presupuesto no encontrado' });
+            }
+            presupuesto.estado = 'Pendiente de calificación';
+            await presupuesto.save();
+            res.status(200).json({ message: 'Presupuesto aceptado correctamente' });
+        }
+        catch (error) {
+            res.status(500).json({ error: 'Error al aceptar el presupuesto' });
+        }
+        } catch (error) {
+            res.status(500).json({ error: 'Error al aceptar la solicitud del prestador' });
+        }
+    },
+
+    async rejectPresupuesto(req, res) {
+        try {
+            const { id } = req.params;
+            const presupuesto = await Presupuesto.findByPk(id);
+            if (!presupuesto) {
+                return res.status(404).json({ error: 'Presupuesto no encontrado' });
+            }
+            presupuesto.estado = 'Rechazado';
+            await presupuesto.save();
+            res.status(200).json({ message: 'Presupuesto rechazado correctamente' });
+        }
+        catch (error) {
+            res.status(500).json({ error: 'Error al rechazar el presupuesto' });
+        }
     }
 };
