@@ -11,11 +11,6 @@ module.exports = {
         try {
             const { id } = req.params;
 
-            // Verificar que el usuario sea el cliente o administrador
-            if (req.userRol !== 'Administrador' && req.userId != id) {
-                return ResponseService.forbidden(res, 'No tienes permisos para ver estas solicitudes');
-            }
-
             const { 
                 page = PAGINATION.DEFAULT_PAGE, 
                 limit = PAGINATION.DEFAULT_LIMIT,
@@ -34,6 +29,11 @@ module.exports = {
             const cliente = await Cliente.findByPk(id);
             if (!cliente) {
                 return ResponseService.notFound(res, 'Cliente');
+            }
+
+            // Verificar que el usuario sea el cliente o administrador
+            if (req.userRol !== 'Administrador' && cliente.id_usuario != req.userId) {
+                return ResponseService.forbidden(res, 'No tienes permisos para ver estas solicitudes');
             }
 
             const pageNum = Math.max(1, parseInt(page));
@@ -99,6 +99,11 @@ module.exports = {
             const cliente = await Cliente.findByPk(id_cliente);
             if (!cliente) {
                 return ResponseService.notFound(res, 'Cliente');
+            }
+
+            // Verificar que el usuario sea el cliente o administrador
+            if (req.userRol !== 'Administrador' && cliente.id_usuario != req.userId) {
+                return ResponseService.forbidden(res, 'No tienes permisos para crear solicitudes para este cliente');
             }
 
             // Validaciones de datos
