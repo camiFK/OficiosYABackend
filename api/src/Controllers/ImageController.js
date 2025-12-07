@@ -3,17 +3,18 @@ const ResponseService = require('../Services/ResponseService');
 const { ImagenPrestador, ImagenSolicitud, Prestador, SolicitudServicio } = require('../Models/Index');
 
 module.exports = {
-        // POST /api/images/upload/prestador - Upload imagen de prestador
-    async uploadPrestadorImage(req, res) {
+    async uploadPrestadorImages(req, res) {
         try {
-            if (!req.file) {
+            if (!req.files || !req.files.imagen || req.files.imagen.length === 0) {
                 return ResponseService.validationError(res, { 
-                    image: 'No se proporcionó ningún archivo de imagen'
-                }, 'Archivo faltante');
+                    images: 'No se proporcionaron archivos de imagen'
+                }, 'Archivos faltantes');
             }
 
+            const files = Array.isArray(req.files.imagen) ? req.files.imagen : [req.files.imagen];
+
             if (!req.body.prestadorId) {
-                return ResponseService.validationError(res, { 
+                return ResponseService.validationError(res, {
                     prestadorId: 'El ID del prestador es requerido'
                 }, 'ID de prestador faltante');
             }
@@ -24,90 +25,118 @@ module.exports = {
                 return ResponseService.notFound(res, 'Prestador no encontrado');
             }
 
-            // Validar imagen
-            ImageService.validateImage(req.file);
+            // Procesar cada imagen
+            const uploadedImages = [];
+            for (const file of files) {
+                try {
+                    // Validar imagen
+                    ImageService.validateImage(file);
 
-            // Subir imagen a ImgBB
-            const imgbbUrl = await ImageService.uploadToImgBB(req.file);
+                    // Subir imagen a ImgBB
+                    const imgbbUrl = await ImageService.uploadToImgBB(file);
 
-            // Guardar en la base de datos con URL de ImgBB
-            const imagenPrestador = await ImagenPrestador.create({
-                id_prestador: parseInt(req.body.prestadorId),
-                ruta_imagen: imgbbUrl, // URL de ImgBB
-                descripcion: req.body.descripcion || null,
-                fecha_subida: new Date()
-            });
+                    // Guardar en la base de datos con URL de ImgBB
+                    const imagenPrestador = await ImagenPrestador.create({
+                        id_prestador: parseInt(req.body.prestadorId),
+                        ruta_imagen: imgbbUrl, // URL de ImgBB
+                        descripcion: req.body.descripcion || null,
+                        fecha_subida: new Date()
+                    });
 
-            const response = {
-                id: imagenPrestador.id_imagen_prestador,
-                prestadorId: imagenPrestador.id_prestador,
-                originalName: req.file.originalname,
-                url: imagenPrestador.ruta_imagen, // URL de ImgBB
-                descripcion: imagenPrestador.descripcion,
-                fechaSubida: imagenPrestador.fecha_subida,
-                size: req.file.size,
-                mimetype: req.file.mimetype,
-                provider: 'imgbb'
-            };
+                    uploadedImages.push({
+                        id: imagenPrestador.id_imagen_prestador,
+                        prestadorId: imagenPrestador.id_prestador,
+                        originalName: file.originalFilename,
+                        url: imagenPrestador.ruta_imagen,
+                        descripcion: imagenPrestador.descripcion,
+                        fechaSubida: imagenPrestador.fecha_subida,
+                        size: file.size,
+                        mimetype: file.mimetype,
+                        provider: 'imgbb'
+                    });
+                } catch (fileError) {
+                    console.error(`Error procesando archivo ${file.originalFilename}:`, fileError);
+                    // Continuar con otros archivos pero registrar el error
+                }
+            }
 
-            return ResponseService.success(res, response, 'Imagen de prestador subida exitosamente');
+            if (uploadedImages.length === 0) {
+                return ResponseService.serverError(res, 'No se pudo procesar ninguna imagen');
+            }
+
+            return ResponseService.success(res, uploadedImages, `${uploadedImages.length} imagen(es) de prestador subida(s) exitosamente`);
         } catch (error) {
-            console.error('Error al subir imagen de prestador:', error);
-            return ResponseService.serverError(res, 'Error al subir imagen: ' + error.message);
+            console.error('Error al subir imágenes de prestador:', error);
+            return ResponseService.serverError(res, 'Error al subir imágenes: ' + error.message);
         }
     },
 
-    // POST /api/images/upload/solicitud - Upload imagen de solicitud
-    async uploadSolicitudImage(req, res) {
+    async uploadSolicitudImages(req, res) {
         try {
-            if (!req.file) {
+            if (!req.files || !req.files.imagen || req.files.imagen.length === 0) {
                 return ResponseService.validationError(res, { 
-                    image: 'No se proporcionó ningún archivo de imagen'
-                }, 'Archivo faltante');
+                    images: 'No se proporcionaron archivos de imagen'
+                }, 'Archivos faltantes');
             }
 
-            if (!req.body.solicitudId) {
-                return ResponseService.validationError(res, { 
-                    solicitudId: 'El ID de la solicitud es requerido'
+            const files = Array.isArray(req.files.imagen) ? req.files.imagen : [req.files.imagen];
+            const solicitudId = req.body.id_solicitud || (req.body['id_solicitud\n'] && req.body['id_solicitud\n'][0]);
+
+            if (!solicitudId) {
+                return ResponseService.validationError(res, {
+                    id_solicitud: 'El ID de la solicitud es requerido'
                 }, 'ID de solicitud faltante');
             }
 
             // Verificar que la solicitud existe
-            const solicitud = await SolicitudServicio.findByPk(parseInt(req.body.solicitudId));
+            const solicitud = await SolicitudServicio.findByPk(parseInt(solicitudId));
             if (!solicitud) {
                 return ResponseService.notFound(res, 'Solicitud no encontrada');
             }
 
-            // Validar imagen
-            ImageService.validateImage(req.file);
+            // Procesar cada imagen
+            const uploadedImages = [];
+            for (const file of files) {
+                try {
+                    // Validar imagen
+                    ImageService.validateImage(file);
 
-            // Subir imagen a ImgBB
-            const imgbbUrl = await ImageService.uploadToImgBB(req.file);
+                    // Subir imagen a ImgBB
+                    const imgbbUrl = await ImageService.uploadToImgBB(file);
 
-            // Guardar en la base de datos con URL de ImgBB
-            const imagenSolicitud = await ImagenSolicitud.create({
-                id_solicitud: parseInt(req.body.solicitudId),
-                ruta_imagen: imgbbUrl, // URL de ImgBB
-                descripcion: req.body.descripcion || null,
-                fecha_subida: new Date()
-            });
+                    // Guardar en la base de datos con URL de ImgBB
+                    const imagenSolicitud = await ImagenSolicitud.create({
+                        id_solicitud: parseInt(solicitudId),
+                        ruta_imagen: imgbbUrl, // URL de ImgBB
+                        descripcion: req.body.descripcion || null,
+                        fecha_subida: new Date()
+                    });
 
-            const response = {
-                id: imagenSolicitud.id_imagen_solicitud,
-                solicitudId: imagenSolicitud.id_solicitud,
-                originalName: req.file.originalname,
-                url: imagenSolicitud.ruta_imagen,
-                descripcion: imagenSolicitud.descripcion,
-                fechaSubida: imagenSolicitud.fecha_subida,
-                size: req.file.size,
-                mimetype: req.file.mimetype,
-                provider: 'imgbb'
-            };
+                    uploadedImages.push({
+                        id: imagenSolicitud.id_imagen_solicitud,
+                        solicitudId: imagenSolicitud.id_solicitud,
+                        originalName: file.originalFilename || file.name,
+                        url: imagenSolicitud.ruta_imagen,
+                        descripcion: imagenSolicitud.descripcion,
+                        fechaSubida: imagenSolicitud.fecha_subida,
+                        size: file.size,
+                        mimetype: file.mimetype,
+                        provider: 'imgbb'
+                    });
+                } catch (fileError) {
+                    console.error(`Error procesando archivo ${file.originalFilename}:`, fileError);
+                    // Continuar con otros archivos pero registrar el error
+                }
+            }
 
-            return ResponseService.success(res, response, 'Imagen de solicitud subida exitosamente');
+            if (uploadedImages.length === 0) {
+                return ResponseService.serverError(res, 'No se pudo procesar ninguna imagen');
+            }
+
+            return ResponseService.success(res, uploadedImages, `${uploadedImages.length} imagen(es) de solicitud subida(s) exitosamente`);
         } catch (error) {
-            console.error('Error al subir imagen de solicitud:', error);
-            return ResponseService.serverError(res, 'Error al subir imagen: ' + error.message);
+            console.error('Error al subir imágenes de solicitud:', error);
+            return ResponseService.serverError(res, 'Error al subir imágenes: ' + error.message);
         }
     },
 
