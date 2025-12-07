@@ -70,12 +70,27 @@ module.exports = {
             }
 
             // Si no existe, procedemos a crearlo
-            const { correo, contrasena } = req.body;
+                const { correo, contrasena, confirmar_contrasena } = req.body;
 
             // Validaciones básicas
-            if (!validators.isValidEmail(correo) || !validators.isValidPassword(contrasena)) {
-                return ResponseService.validationError(res, [{ message: 'Credenciales inválidas' }]);
-            }
+                const validationErrors = [];
+                if (!validators.isValidEmail(correo)) {
+                    validationErrors.push({ field: 'correo', message: 'Correo inválido' });
+                }
+                if (!validators.isValidPassword(contrasena)) {
+                    validationErrors.push({ field: 'contrasena', message: 'Contraseña inválida' });
+                }
+                if (contrasena !== confirmar_contrasena) {
+                    validationErrors.push({ field: 'confirmar_contrasena', message: 'Las contraseñas no coinciden' });
+                }
+                if (validationErrors.length > 0) {
+                    // Agregar detalle de la regla de contraseña si hay error de contraseña
+                    const passwordError = validationErrors.find(e => e.field === 'contrasena');
+                    if (passwordError) {
+                        passwordError.message += ' La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un símbolo.';
+                    }
+                    return ResponseService.validationError(res, validationErrors);
+                }
 
             // Hashear contraseña
             const hashedPassword = await UserService.hashPassword(contrasena);

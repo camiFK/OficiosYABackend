@@ -129,15 +129,19 @@ module.exports = {
         try {
             const { localidad, provincia, direccion } = req.body;
 
+
             // Validaciones
             const validationErrors = [];
+            const invalidValues = ['string', 'test', 'null', 'undefined', ''];
+            const localidadVal = localidad ? localidad.trim().toLowerCase() : '';
+            const provinciaVal = provincia ? provincia.trim().toLowerCase() : '';
 
-            if (!localidad || !validators.isValidLength(localidad.trim(), 2, 100)) {
-                validationErrors.push({ field: 'localidad', message: 'La localidad es obligatoria y debe tener entre 2 y 100 caracteres' });
+            if (!localidad || !validators.isValidLength(localidad.trim(), 2, 100) || invalidValues.includes(localidadVal)) {
+                validationErrors.push({ field: 'localidad', message: 'La localidad es obligatoria, debe ser válida y tener entre 2 y 100 caracteres' });
             }
 
-            if (!provincia || !validators.isValidLength(provincia.trim(), 2, 100)) {
-                validationErrors.push({ field: 'provincia', message: 'La provincia es obligatoria y debe tener entre 2 y 100 caracteres' });
+            if (!provincia || !validators.isValidLength(provincia.trim(), 2, 100) || invalidValues.includes(provinciaVal)) {
+                validationErrors.push({ field: 'provincia', message: 'La provincia es obligatoria, debe ser válida y tener entre 2 y 100 caracteres' });
             }
 
             if (direccion && !validators.isValidLength(direccion.trim(), 5, 255)) {
