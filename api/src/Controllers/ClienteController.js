@@ -62,6 +62,12 @@ module.exports = {
                         model: Ubicacion,
                         as: 'ubicacion',
                         attributes: ['id_ubicacion', 'localidad', 'provincia']
+                    },
+                    {
+                        model: require('../Models/Index').ImagenSolicitud,
+                        as: 'imagenes',
+                        attributes: ['id_imagen_solicitud', 'ruta_imagen', 'descripcion', 'fecha_subida'],
+                        required: false
                     }
                 ],
                 order: [['fecha_creacion', 'DESC']],
