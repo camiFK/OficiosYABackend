@@ -193,6 +193,9 @@ module.exports = {
 
       if (!validators.isValidPositiveInteger(parseInt(id))) return ResponseService.validationError(res, [{ field: 'id', message: 'ID inválido' }]);
       if (!estado || !validators.isValidUsuarioEstado(estado)) return ResponseService.validationError(res, [{ field: 'estado', message: 'Estado inválido' }]);
+       if (!motivo || typeof motivo !== 'string' || motivo.trim().length < 10) {
+         return ResponseService.validationError(res, [{ field: 'motivo', message: 'El motivo es obligatorio y debe tener al menos 10 caracteres.' }]);
+       }
 
       const user = await Usuario.findByPk(id);
       if (!user) return ResponseService.notFound(res, 'Usuario');
