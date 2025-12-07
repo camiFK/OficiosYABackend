@@ -1,70 +1,44 @@
-const multer = require('multer');
+const { IncomingForm } = require('formidable');
 const path = require('path');
-const fs = require('fs');
-
-// Configuración de almacenamiento en memoria
-const memoryStorage = multer.memoryStorage();
-
-// Filtro para solo aceptar imágenes
-const fileFilter = (req, file, cb) => {
-  const allowedMimes = [
-    'image/jpeg',
-    'image/jpg', 
-    'image/png',
-    'image/webp',
-    'image/gif'
-  ];
-
-  if (allowedMimes.includes(file.mimetype.toLowerCase())) {
-    cb(null, true);
-  } else {
-    cb(new Error('Tipo de archivo no válido. Solo se permiten imágenes (JPEG, PNG, WEBP, GIF)'), false);
-  }
-};
-
-// Configuraciones de multer
-const memoryUpload = multer({
-  storage: memoryStorage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB máximo por archivo
-    files: 5 // máximo 5 archivos
-  },
-  fileFilter: fileFilter
-});
-
-// Solo usamos memoria storage para subir a ImgBB
-const upload = memoryUpload;
 
 // Middleware para subir una sola imagen
-const uploadSingleImage = (fieldName = 'imagen') => {
+const uploadSingleImage = (fieldName = 'image') => {
   return (req, res, next) => {
-    const uploadMiddleware = upload.single(fieldName);
-    
-    uploadMiddleware(req, res, (error) => {
-      if (error) {
-        console.error('Error en uploadSingleImage:', error.message);
-        
-        if (error instanceof multer.MulterError) {
-          if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-              success: false,
-              message: 'El archivo es muy grande. Máximo 5MB permitido.'
-            });
-          }
-          if (error.code === 'LIMIT_UNEXPECTED_FILE') {
-            return res.status(400).json({
-              success: false,
-              message: 'Campo de archivo inesperado.'
-            });
-          }
+    const form = new IncomingForm({
+      multiples: false,
+      keepExtensions: true,
+      maxFileSize: 5 * 1024 * 1024, // 5MB
+      filter: (part) => {
+        const allowedMimes = [
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/webp',
+          'image/gif'
+        ];
+        return allowedMimes.includes(part.mimetype);
+      }
+    });
+
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        let errorMessage = 'Error al procesar la imagen';
+
+        if (err.message && err.message.includes('maxFileSize')) {
+          errorMessage = 'El archivo es muy grande. El tamaño máximo permitido es de 5MB.';
+        } else if (err.message) {
+          errorMessage = err.message;
         }
-        
+
         return res.status(400).json({
           success: false,
-          message: error.message || 'Error al procesar la imagen'
+          message: errorMessage
         });
       }
-      
+
+      req.files = files;
+      req.body = fields;
+
       next();
     });
   };
@@ -73,33 +47,53 @@ const uploadSingleImage = (fieldName = 'imagen') => {
 // Middleware para subir múltiples imágenes
 const uploadMultipleImages = (fieldName = 'imagenes', maxCount = 5) => {
   return (req, res, next) => {
-    const uploadMiddleware = upload.array(fieldName, maxCount);
-    
-    uploadMiddleware(req, res, (error) => {
-      if (error) {
-        console.error('Error en uploadMultipleImages:', error.message);
-        
-        if (error instanceof multer.MulterError) {
-          if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-              success: false,
-              message: 'Uno o más archivos son muy grandes. Máximo 5MB por archivo.'
-            });
-          }
-          if (error.code === 'LIMIT_FILE_COUNT') {
-            return res.status(400).json({
-              success: false,
-              message: `Demasiados archivos. Máximo ${maxCount} archivos permitidos.`
-            });
-          }
-        }
-        
+    const form = new IncomingForm({
+      multiples: true,
+      keepExtensions: true,
+      maxFileSize: 5 * 1024 * 1024, // 5MB por archivo
+      maxTotalFileSize: 25 * 1024 * 1024, // 25MB total máximo
+      filter: (part) => {
+        const allowedMimes = [
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/webp',
+          'image/gif'
+        ];
+        return allowedMimes.includes(part.mimetype);
+      }
+    });
+
+    form.parse(req, (err, fields, files) => {
+      // Verificar límite de archivos primero
+      const fileArray = Array.isArray(files[fieldName]) ? files[fieldName] : [files[fieldName]].filter(Boolean);
+      if (fileArray.length > maxCount) {
         return res.status(400).json({
           success: false,
-          message: error.message || 'Error al procesar las imágenes'
+          message: `No se pueden subir más de ${maxCount} archivos. Máximo ${maxCount} archivos permitidos.`
         });
       }
-      
+
+      if (err) {
+        let errorMessage = 'Error al procesar las imágenes';
+
+        if (err.message && err.message.includes('maxFileSize')) {
+          errorMessage = 'Uno o más archivos son muy grandes. El tamaño máximo permitido es de 5MB por archivo.';
+        } else if (err.message && err.message.includes('maxTotalFileSize')) {
+          errorMessage = 'El tamaño total de todos los archivos excede el límite máximo de 25MB.';
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+
+        return res.status(400).json({
+          success: false,
+          message: errorMessage
+        });
+      }
+
+      req.files = files;
+      req.body = fields;
+
       next();
     });
   };
@@ -117,14 +111,22 @@ const validateImageFile = (req, res, next) => {
 
   // Validación adicional si es necesario
   const files = req.files || [req.file];
-  
-  for (let file of files) {
-    if (!file) continue;
-    
+
+  for (let file of Object.values(files)) {
+    if (Array.isArray(file)) {
+      file.forEach(f => validateSingleFile(f));
+    } else if (file) {
+      validateSingleFile(file);
+    }
+  }
+
+  function validateSingleFile(file) {
+    if (!file) return;
+
     // Validar extensión por nombre de archivo también
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-    const fileExtension = path.extname(file.originalname).toLowerCase();
-    
+    const fileExtension = path.extname(file.originalFilename || file.name).toLowerCase();
+
     if (!allowedExtensions.includes(fileExtension)) {
       return res.status(400).json({
         success: false,
@@ -148,6 +150,5 @@ module.exports = {
   logUploadedFiles,
   upload: uploadSingleImage,
   uploadSingle: uploadSingleImage,
-  uploadMultiple: uploadMultipleImages,
-  memoryUpload: memoryUpload
+  uploadMultiple: uploadMultipleImages
 };
