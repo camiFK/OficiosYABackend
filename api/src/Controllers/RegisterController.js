@@ -46,6 +46,13 @@ module.exports = {
                 });
             }
 
+            // Validar formato de teléfono si se proporciona
+            if (telefono && !validators.isValidPhone(telefono)) {
+                return res.status(400).json({ 
+                    error: validators.getPhoneErrorMessage() 
+                });
+            }
+
             // Validar formato de correo
             if (!validators.isValidEmail(correo)) {
                 return res.status(400).json({ 
