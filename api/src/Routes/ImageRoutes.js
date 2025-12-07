@@ -6,12 +6,12 @@ const authMiddleware = require('../Middlewares/authMiddleware');
 
 // Rutas para imágenes //
 
-// Ruta para imágenes de prestadores
+// Ruta para subir imagen de prestador
 router.post('/upload/prestador', 
     authMiddleware.verifyToken, 
-    imageMiddleware.memoryUpload.single('image'), 
-    imageMiddleware.logUploadedFiles,
-    ImageController.uploadPrestadorImage
+    imageMiddleware.uploadMultiple('imagen', 5), 
+    imageMiddleware.validateImageFile,
+    ImageController.uploadPrestadorImages
 );
 
 // Ruta para obtener imágenes de prestadores
@@ -36,9 +36,9 @@ router.delete('/prestador/:imageId',
 // Ruta para subir imagen de solicitud
 router.post('/upload/solicitud', 
     authMiddleware.verifyToken, 
-    imageMiddleware.memoryUpload.single('image'), 
-    imageMiddleware.logUploadedFiles,
-    ImageController.uploadSolicitudImage
+    imageMiddleware.uploadMultiple('imagen', 5), 
+    imageMiddleware.validateImageFile,
+    ImageController.uploadSolicitudImages
 );
 
 // Ruta para obtener imágenes de una solicitud

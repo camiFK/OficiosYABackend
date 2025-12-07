@@ -22,14 +22,14 @@ router.get('/:id/promedio-calificaciones',
 // Rutas de imágenes de prestadores
 router.post('/images', 
     authMiddleware.verifyToken,
-    imageMiddleware.memoryUpload.single('image'),
+    imageMiddleware.uploadSingle('image'),
     imageMiddleware.logUploadedFiles,
     controller.uploadPrestadorImage
 );
 
 router.post('/:id/imagenes', 
     authMiddleware.verifyToken,
-    imageMiddleware.memoryUpload.single('imagen'),
+    imageMiddleware.uploadSingle('imagen'),
     imageMiddleware.logUploadedFiles,
     controller.saveImage
 );
