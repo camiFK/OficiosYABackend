@@ -9,7 +9,7 @@ const authMiddleware = require('../Middlewares/authMiddleware');
 // Ruta para subir imagen de prestador
 router.post('/upload/prestador', 
     authMiddleware.verifyToken, 
-    imageMiddleware.uploadMultiple('imagen', 5), 
+    imageMiddleware.uploadSingleImage('imagen'), 
     imageMiddleware.validateImageFile,
     ImageController.uploadPrestadorImages
 );
@@ -36,7 +36,7 @@ router.delete('/prestador/:imageId',
 // Ruta para subir imagen de solicitud
 router.post('/upload/solicitud', 
     authMiddleware.verifyToken, 
-    imageMiddleware.uploadMultiple('imagen', 5), 
+    imageMiddleware.uploadSingleImage('imagen'), 
     imageMiddleware.validateImageFile,
     ImageController.uploadSolicitudImages
 );

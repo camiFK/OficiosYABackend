@@ -20,25 +20,26 @@ router.get('/:id/promedio-calificaciones',
 );
 
 // Rutas de imágenes de prestadores
-router.post('/images', 
-    authMiddleware.verifyToken,
-    imageMiddleware.uploadSingle('image'),
-    imageMiddleware.logUploadedFiles,
-    controller.uploadPrestadorImage
-);
+// Nota: Las rutas de imágenes se manejan en ImageRoutes.js
+// router.post('/images', 
+//     authMiddleware.verifyToken,
+//     imageMiddleware.uploadSingle('image'),
+//     imageMiddleware.logUploadedFiles,
+//     controller.uploadPrestadorImage
+// );
 
-router.post('/:id/imagenes', 
-    authMiddleware.verifyToken,
-    imageMiddleware.uploadSingle('imagen'),
-    imageMiddleware.logUploadedFiles,
-    controller.saveImage
-);
+// router.post('/:id/imagenes', 
+//     authMiddleware.verifyToken,
+//     imageMiddleware.uploadSingle('imagen'),
+//     imageMiddleware.logUploadedFiles,
+//     controller.saveImage
+// );
 
-router.delete('/images/:id', authMiddleware.verifyToken, controller.deletePrestadorImage);
+// router.delete('/images/:id', authMiddleware.verifyToken, controller.deletePrestadorImage);
 
-router.put('/images/:id', authMiddleware.verifyToken, controller.updatePrestadorImage);
+// router.put('/images/:id', authMiddleware.verifyToken, controller.updatePrestadorImage);
 
-router.get('/:id/images',  controller.getPrestadorImages);
+// router.get('/:id/images',  controller.getPrestadorImages);
 
 router.post('/presupuestos/enviados', authMiddleware.verifyToken, controller.getPresupuestosEnviados);
 router.post('/solicitudes/rechazar', authMiddleware.verifyToken, controller.rejectSolicitud);
