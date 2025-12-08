@@ -14,7 +14,9 @@ const uploadSingleImage = (fieldName = 'image') => {
           'image/jpg',
           'image/png',
           'image/webp',
-          'image/gif'
+          'image/gif',
+          'image/bmp',
+          'image/tiff'
         ];
         return allowedMimes.includes(part.mimetype);
       }
@@ -58,7 +60,9 @@ const uploadMultipleImages = (fieldName = 'imagenes', maxCount = 5) => {
           'image/jpg',
           'image/png',
           'image/webp',
-          'image/gif'
+          'image/gif',
+          'image/bmp',
+          'image/tiff'
         ];
         return allowedMimes.includes(part.mimetype);
       }
