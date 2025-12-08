@@ -8,16 +8,8 @@ module.exports = {
         try {
             const { fechaInicio, fechaFin } = req.query;
 
-            // Validación robusta de fechas (YYYY-MM-DD)
-            const isValidDate = (dateStr) => {
-                return /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !isNaN(Date.parse(dateStr));
-            };
-
             if (!fechaInicio || !fechaFin) {
                 return ResponseService.error(res, "Faltan fechas", 400);
-            }
-            if (!isValidDate(fechaInicio) || !isValidDate(fechaFin)) {
-                return ResponseService.error(res, "Formato de fecha inválido. Use YYYY-MM-DD", 400);
             }
 
             // Agrupar usuarios por fecha de registro

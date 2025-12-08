@@ -1,5 +1,6 @@
 const axios = require('axios');
 const FormData = require('form-data');
+const fs = require('fs');
 
 class ImageService {
   // Subir imagen a ImgBB (almacenamiento en la nube)
@@ -10,13 +11,24 @@ class ImageService {
       throw new Error('IMGBB_API_KEY no está configurada en las variables de entorno');
     }
 
-    if (!file || !file.buffer) {
+    if (!file) {
+      throw new Error('Archivo no válido');
+    }
+
+    let buffer;
+    if (file.buffer) {
+      // Multer style
+      buffer = file.buffer;
+    } else if (file.filepath) {
+      // Formidable style
+      buffer = fs.readFileSync(file.filepath);
+    } else {
       throw new Error('Archivo no válido o buffer no encontrado');
     }
 
     try {
       const formData = new FormData();
-      formData.append('image', file.buffer.toString('base64'));
+      formData.append('image', buffer.toString('base64'));
 
       const response = await axios.post(
         `https://api.imgbb.com/1/upload?key=${apiKey}`, 
@@ -53,18 +65,21 @@ class ImageService {
 
   // Validar imagen antes de subir
   static validateImage(file) {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!file) {
       throw new Error('No se proporcionó ningún archivo');
     }
 
-    if (!allowedTypes.includes(file.mimetype)) {
-      throw new Error('Tipo de archivo no permitido. Solo se permiten JPG, JPEG, PNG, WEBP');
+    const mimetype = file.mimetype || file.type;
+    const size = file.size;
+
+    if (!allowedTypes.includes(mimetype)) {
+      throw new Error('Tipo de archivo no permitido. Solo se permiten JPG, JPEG, PNG, WEBP, GIF');
     }
 
-    if (file.size > maxSize) {
+    if (size > maxSize) {
       throw new Error('El archivo es demasiado grande. Máximo 5MB');
     }
 
