@@ -11,7 +11,9 @@ async function runSeeds() {
 
         if (process.env.NODE_ENV === 'development') {
             console.log('Limpiando base de datos...');
+            await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
             await sequelize.sync({ force: true });
+            await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
             console.log('Base de datos limpiada\n');
         }
         

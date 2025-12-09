@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('../docs/swagger.js');
 
 const UserRoutes = require('./Routes/UsuarioRoutes.js');
 const RolRoutes = require('./Routes/RolRoutes.js');
@@ -45,9 +47,20 @@ app.use('/api/images', ImageRoutes);
 app.use('/api/notificaciones', NotificacionRoutes);
 app.use('/api/calificaciones', CalificacionRoutes);
 app.use('/api/admin', AdminRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const ResponseService = require('./Services/ResponseService');
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Verifica el estado de la API
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: API operativa
+ */
 app.get('/api/health', (req, res) => {
     ResponseService.status(res, 'healthy', {
         message: 'API de OficiosYA funcionando correctamente',
