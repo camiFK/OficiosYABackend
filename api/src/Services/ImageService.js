@@ -37,7 +37,7 @@ class ImageService {
           headers: {
             ...formData.getHeaders()
           },
-          timeout: 60000 // 60 segundos de timeout
+          timeout: 30000 // 30 segundos de timeout
         }
       );
 
@@ -65,7 +65,7 @@ class ImageService {
 
   // Validar imagen antes de subir
   static validateImage(file) {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/tiff'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!file) {
@@ -76,7 +76,7 @@ class ImageService {
     const size = file.size;
 
     if (!allowedTypes.includes(mimetype)) {
-      throw new Error(`Tipo de archivo no permitido: ${mimetype}. Solo se permiten JPG, JPEG, PNG, WEBP, GIF`);
+      throw new Error('Tipo de archivo no permitido. Solo se permiten JPG, JPEG, PNG, WEBP, GIF');
     }
 
     if (size > maxSize) {
@@ -127,27 +127,6 @@ class ImageService {
   // Validar que la URL sea de ImgBB
   static isImgBBUrl(url) {
     return url && (url.includes('ibb.co') || url.includes('imgbb.com'));
-  }
-
-  // Extraer ID de imgbb de la URL
-  static extractImgbbId(url) {
-    const match = url.match(/\/([a-zA-Z0-9]+)\/[^\/]+\.jpg$/);
-    return match ? match[1] : null;
-  }
-
-  // Eliminar imagen de imgbb
-  static async deleteFromImgbb(imgbbId) {
-    const apiKey = process.env.IMGBB_API_KEY;
-    const deleteUrl = `https://api.imgbb.com/1/delete/${imgbbId}?key=${apiKey}`;
-    
-    try {
-      const response = await axios.delete(deleteUrl);
-      if (response.status !== 200) {
-        console.warn('Error eliminando de imgbb:', response.data);
-      }
-    } catch (error) {
-      console.error('Error en deleteFromImgbb:', error);
-    }
   }
 }
 

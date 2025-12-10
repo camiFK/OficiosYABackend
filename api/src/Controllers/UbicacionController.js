@@ -125,58 +125,45 @@ module.exports = {
     },
 
     // POST /ubicaciones: Crea una nueva ubicación (solo admin)
-    async createUbicacion(req, res) {
-        try {
-            const { localidad, provincia, direccion } = req.body;
+async createUbicacion(req, res) {
+  try {
+    const { localidad, provincia, direccion } = req.body;
 
+    // Validaciones
+    const validationErrors = [];
+    const invalidValues = ['string', 'test', 'null', 'undefined', ''];
+    const localidadVal = localidad ? localidad.trim().toLowerCase() : '';
+    const provinciaVal = provincia ? provincia.trim().toLowerCase() : '';
 
-            // Validaciones
-            const validationErrors = [];
-            const invalidValues = ['string', 'test', 'null', 'undefined', ''];
-            const localidadVal = localidad ? localidad.trim().toLowerCase() : '';
-            const provinciaVal = provincia ? provincia.trim().toLowerCase() : '';
+    if (!localidad || !validators.isValidLength(localidad.trim(), 2, 100) || invalidValues.includes(localidadVal)) {
+      validationErrors.push({ field: 'localidad', message: 'La localidad es obligatoria, debe ser válida y tener entre 2 y 100 caracteres' });
+    }
 
-            if (!localidad || !validators.isValidLength(localidad.trim(), 2, 100) || invalidValues.includes(localidadVal)) {
-                validationErrors.push({ field: 'localidad', message: 'La localidad es obligatoria, debe ser válida y tener entre 2 y 100 caracteres' });
-            }
+    if (!provincia || !validators.isValidLength(provincia.trim(), 2, 100) || invalidValues.includes(provinciaVal)) {
+      validationErrors.push({ field: 'provincia', message: 'La provincia es obligatoria, debe ser válida y tener entre 2 y 100 caracteres' });
+    }
 
-            if (!provincia || !validators.isValidLength(provincia.trim(), 2, 100) || invalidValues.includes(provinciaVal)) {
-                validationErrors.push({ field: 'provincia', message: 'La provincia es obligatoria, debe ser válida y tener entre 2 y 100 caracteres' });
-            }
+    if (direccion && !validators.isValidLength(direccion.trim(), 5, 255)) {
+      validationErrors.push({ field: 'direccion', message: 'La dirección debe tener entre 5 y 255 caracteres' });
+    }
 
-            if (direccion && !validators.isValidLength(direccion.trim(), 5, 255)) {
-                validationErrors.push({ field: 'direccion', message: 'La dirección debe tener entre 5 y 255 caracteres' });
-            }
+    if (validationErrors.length > 0) {
+      return ResponseService.validationError(res, validationErrors);
+    }
 
-            if (validationErrors.length > 0) {
-                return ResponseService.validationError(res, validationErrors);
-            }
+    const ubicacion = await Ubicacion.create({
+      localidad: validators.sanitizeString(localidad),
+      provincia: validators.sanitizeString(provincia),
+      direccion: direccion ? validators.sanitizeString(direccion) : null
+    });
 
-            // Verificar si ya existe la combinación localidad-provincia
-            const existingUbicacion = await Ubicacion.findOne({
-                where: { 
-                    localidad: localidad.trim(), 
-                    provincia: provincia.trim() 
-                }
-            });
+    return ResponseService.created(res, ubicacion, 'Ubicación creada exitosamente');
 
-            if (existingUbicacion) {
-                return ResponseService.conflict(res, 'La ubicación ya existe');
-            }
-
-            const ubicacion = await Ubicacion.create({
-                localidad: validators.sanitizeString(localidad),
-                provincia: validators.sanitizeString(provincia),
-                direccion: direccion ? validators.sanitizeString(direccion) : null
-            });
-
-            return ResponseService.created(res, ubicacion, 'Ubicación creada exitosamente');
-
-        } catch (error) {
-            console.error('Error al crear ubicación:', error);
-            return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
-        }
-    },
+  } catch (error) {
+    console.error('Error al crear ubicación:', error);
+    return ResponseService.error(res, ERROR_MESSAGES.INTERNAL_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+},
 
     // PUT /ubicaciones/:id: Actualiza una ubicación (solo admin)
     async updateUbicacion(req, res) {

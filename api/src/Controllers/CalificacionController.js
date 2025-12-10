@@ -1,27 +1,8 @@
-const { Calificacion, Cliente, Prestador, SolicitudServicio, SolicitudPrestador, Presupuesto, Notificacion, Usuario } = require('../Models/Index');
+const { Calificacion, Cliente, Prestador, SolicitudServicio, SolicitudPrestador, Presupuesto, Usuario } = require('../Models/Index');
 const { Op, fn, col } = require('sequelize');
 const ResponseService = require('../Services/ResponseService');
 const EmailService = require('../Services/EmailService');
-
-// Función helper para crear notificaciones automáticas
-async function createAutomaticNotification(idUsuarioDestino, tipo, mensaje, idSolicitud = null) {
-    try {
-        const notificacion = await Notificacion.create({
-            id_usuario_destino: idUsuarioDestino,
-            tipo: tipo,
-            mensaje: mensaje,
-            estado: 'pendiente',
-            fecha_envio: new Date(),
-            id_solicitud: idSolicitud
-        });
-
-        console.log(`Notificación automática creada: ${mensaje}`);
-        return notificacion;
-    } catch (error) {
-        console.error('Error creando notificación automática:', error);
-        // No lanzamos error para no interrumpir el flujo principal
-    }
-}
+const { createAutomaticNotification } = require('../Utils/notificationUtil');
 
 module.exports = {
     // POST /api/calificaciones: Registra la calificación de un prestador
@@ -85,12 +66,8 @@ module.exports = {
                 return ResponseService.notFound(res, 'Solicitud');
             }
 
-            // Verificar que la solicitud esté cerrada (estado "Cerrada")
-            if (solicitud.estado !== 'Cerrada') {
-                return ResponseService.error(res, 'Solo se puede calificar solicitudes cerradas', 400);
-            }
-
-            // Verificar que haya al menos un presupuesto aceptado para esta solicitud
+            // Verificar que exista al menos un presupuesto aceptado para esta solicitud.
+            // Permitimos registrar la calificación aunque la solicitud aún no esté marcada como 'Cerrada'.
             const presupuestoAceptado = await Presupuesto.findOne({
                 where: {
                     id_solicitud: id_solicitud,
@@ -126,6 +103,15 @@ module.exports = {
                 id_prestador: id_prestador,
                 id_solicitud: id_solicitud
             });
+
+            // Marcar la solicitud como 'Cerrada' automáticamente tras recibir la calificación
+            try {
+                if (solicitud && solicitud.update) {
+                    await solicitud.update({ estado: 'Cerrada' });
+                }
+            } catch (errUpdate) {
+                console.warn('No se pudo actualizar el estado de la solicitud a Cerrada:', errUpdate);
+            }
 
             // Notificacion automatica: Notificar al prestador que recibió una calificación
             await createAutomaticNotification(

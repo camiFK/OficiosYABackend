@@ -19,7 +19,10 @@ module.exports = {
                 id_usuario: decoded.id_usuario,
                 id_rol: decoded.id_rol,
                 rol: decoded.rol,
-                correo: decoded.correo
+                correo: decoded.correo,
+                id_prestador: decoded.id_prestador || null, 
+                id_cliente: decoded.id_cliente || null,
+                nombre_completo: decoded.nombre_completo || null
             };
 
             req.userId = decoded.id_usuario;
